@@ -4,13 +4,23 @@ version = "0.1.0"
 description = "Research workspace for CEFR text difficulty modeling"
 requires-python = ">=3.10"
 dependencies = [
+    "datasets>=4.5.0",
+    "globus-sdk>=4.4.0",
+    "langchain>=1.2.10",
+    "langchain-openai>=1.1.10",
+    "langchain-text-splitters>=1.1.1",
+    "langgraph>=1.0.9",
     "matplotlib>=3.10.8",
     "numpy>=2.2.6",
     "pandas>=2.3.3",
+    "qdrant-client>=1.17.0",
     "scikit-learn>=1.7.2",
     "scipy>=1.15.3",
     "seaborn>=0.13.2",
+    "sentence-transformers>=5.2.3",
     "textstat>=0.7.12",
+    "tqdm>=4.67.3",
+    "whoosh>=2.7.4",
     "xgboost>=3.1.3",
 ]
 
