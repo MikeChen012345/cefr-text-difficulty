@@ -297,7 +297,7 @@ if __name__ == "__main__":
     #     use_lftk=not args.no_lftk,
     #     use_surprisal=not args.no_surprisal
     # )
-    features_df, feature_groups = extract_all_features(df, use_lftk=True, use_surprisal=False)
+    features_df, feature_groups = extract_all_features(df, use_lftk=False, use_surprisal=False)
 
     out_dir = results_dir(args.dataset)
     os.makedirs(out_dir, exist_ok=True)
