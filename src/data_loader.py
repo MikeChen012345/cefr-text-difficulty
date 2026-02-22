@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 import os
+from pathlib import Path
 from sklearn.model_selection import StratifiedKFold
 from datasets import load_dataset
 from config import DATA_PATH, CEFR_TO_INT, SEED, N_FOLDS
@@ -9,12 +10,15 @@ from config import DATA_PATH, CEFR_TO_INT, SEED, N_FOLDS
 
 def load_data():
     """Load CEFR-SP dataset and return DataFrame with numeric labels."""
+    print("=" * 50)
     if not os.path.exists(DATA_PATH): # download from Hugging Face if local file not found
         dataset = load_dataset("UniversalCEFR/cefr_sp_en")
         # Save each split to CSV
         for split_name in dataset:
             df = dataset[split_name].to_pandas()
-            df.to_csv(f"datasets/cefr_sp_en/{split_name}.csv", index=False)
+            path = Path(DATA_PATH).parent
+            os.makedirs(path, exist_ok=True)
+            df.to_csv(f"{path}/{split_name}.csv", index=False)
             print(f"Saved {split_name}: {len(df)} rows")
 
     df = pd.read_csv(DATA_PATH)
@@ -22,6 +26,7 @@ def load_data():
     df["label"] = df["cefr_level"].map(CEFR_TO_INT)
     print(f"Loaded {len(df)} sentences")
     print(f"Label distribution:\n{df['cefr_level'].value_counts().sort_index()}")
+    print("=" * 50)
     return df
 
 

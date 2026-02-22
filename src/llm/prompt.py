@@ -13,26 +13,33 @@ When evaluating the CEFR level, consider the following factors:
 - Grammar: Evaluate the variety and accuracy of grammatical structures.
 - Cohesion and Coherence: Analyze how well the text is organized and how ideas are connected.
 - Task Achievement: Consider how well the text fulfills its communicative purpose.
-
-Please provide your CEFR level assessment as an integer label (1 for A1, 2 for A2, 3 for B1, 4 for B2, 5 for C1, 6 for C2) following a rationale explaining your assessment.
-Format your response as follows:
-
-<your rationale here>#### <your CEFR level label here>
-
-For example:
-The text demonstrates a limited range of vocabulary and simple sentence structures, which are characteristic of a beginner level. The ideas are not well connected, and there are frequent grammatical errors. #### 1
 """
 
-SYSTEM_PROMPT_COT = SYSTEM_PROMPT_TEMPLATE + "\n\nPlease provide a step-by-step rationale for your CEFR level assessment, breaking down your evaluation into several components."
+INSTRUCTION = """
+Always provide your CEFR level assessment following a rationale explaining your assessment. Do not embed the final CEFR level within the rationale. Instead, clearly separate the rationale and the final answer using the delimiter "#### ".
+Format your response as follows:
+<your rationale>#### <your CEFR level>
 
-def system_prompt_few_shots(n: int = 3, cot: bool = False) -> str:
+For example:
+The text demonstrates a limited range of vocabulary and simple sentence structures, which are characteristic of a beginner level. The ideas are not well connected, and there are frequent grammatical errors. #### A1
+"""
+
+COT = "\n\nPlease provide a step-by-step rationale for your CEFR level assessment, breaking down your evaluation into several components."
+
+
+
+SYSTEM_PROMPT_BASE = SYSTEM_PROMPT_TEMPLATE + INSTRUCTION
+
+SYSTEM_PROMPT_COT = SYSTEM_PROMPT_BASE + COT + INSTRUCTION
+
+def system_prompt_few_shots(n: int = 1, cot: bool = False) -> str:
     """
     Construct a few-shots system prompt by appending n randomly selected examples of CEFR level assessments to the base system prompt template. 
     Each example should include a corresponding CEFR level label formatted as specified in the template.
     Since no rationale is provided for selecting examples, we will randomly sample n examples from the dataset to include in the prompt.
-    The examples are from the CEFR-SP dataset to avoid data leakage from the test set of UniversalCEFR/readme_en.
+    The examples are from the training dataset to avoid data leakage from the test set.
     Args:
-        n: The number of examples to include in the few-shots prompt. Defaults to 3.
+        n: The number of examples to include in the few-shots prompt. Defaults to 1.
         cot: Whether to include a chain-of-thought rationale in the prompt. Defaults to False.
     Returns:
         A string containing the complete system prompt with n examples appended.
@@ -40,14 +47,14 @@ def system_prompt_few_shots(n: int = 3, cot: bool = False) -> str:
     import numpy as np
     import sys
     sys.path.append("..")
-    from data_loader import load_data
-    df = load_data()
-    examples = np.random.choice(df.to_dict(orient="records"), size=min(n, len(df)), replace=False)
+    from data_loader import load_data_split
+    train_df, _ = load_data_split()
+    examples = np.random.choice(train_df.to_dict(orient="records"), size=min(n, len(train_df)), replace=False)
     example_strs = []
     for example in examples:
-        example_strs.append(f"\nText: {example['text']}\nCEFR Level: {example['label']}\n")
+        example_strs.append(f"\nText:\n{example['text']}\nResponse: <skipping rationale>#### {example['cefr_level']}")
     return SYSTEM_PROMPT_TEMPLATE + "\n\nHere are some examples of CEFR level assessments:\n" + \
-        "\n".join(example_strs) + "\n\nPlease provide a step-by-step rationale for your CEFR level assessment, breaking down your evaluation into several components." if cot else ""
+        "\n".join(example_strs) + (COT if cot else "") + INSTRUCTION
 
 
 

@@ -3,7 +3,6 @@ models:
   - "google/gemma-3-27b-it"
   - "meta-llama/Meta-Llama-3.1-70B-Instruct"
   - "openai/gpt-oss-120b"
-modelIdx: 0 # index of the model to use from the list above
 
 temperature: 0.7
 timeout: 30
@@ -12,3 +11,15 @@ max_tokens: 1024
 model_provider: "openai"
 base_url: "https://inference-api.alcf.anl.gov/resource_server/sophia/vllm/v1"
 api_key: ""
+
+parallelism:
+  max_workers: 4
+
+prompting:
+  n_few_shots:
+    - 0
+    - 1
+    - 2
+    - 4
+    - 8
+  cot: [false, true]
