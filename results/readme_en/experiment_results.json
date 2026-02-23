@@ -1,0 +1,231 @@
+{
+  "experiment_info": {
+    "dataset": "readme_en",
+    "n_samples": 2822,
+    "n_features": 34,
+    "n_folds": 5,
+    "seed": 42,
+    "elapsed_seconds": 1325.6494770050049,
+    "gpu": "Tesla T4"
+  },
+  "feature_models": {
+    "Full_LogReg": {
+      "macro_f1": "0.4158 +/- 0.0193",
+      "accuracy": "0.4475 +/- 0.0167",
+      "adjacent_acc": "0.8653",
+      "kappa": "0.7125",
+      "macro_f1_mean": 0.41580489215914074,
+      "macro_f1_std": 0.019255066264181508,
+      "accuracy_mean": 0.4475497395342999
+    },
+    "Full_RandomForest": {
+      "macro_f1": "0.4273 +/- 0.0133",
+      "accuracy": "0.5174 +/- 0.0100",
+      "adjacent_acc": "0.9185",
+      "kappa": "0.7167",
+      "macro_f1_mean": 0.42726958351355204,
+      "macro_f1_std": 0.013320572251830342,
+      "accuracy_mean": 0.5173601958199963
+    },
+    "Full_XGBoost": {
+      "macro_f1": "0.4248 +/- 0.0084",
+      "accuracy": "0.5181 +/- 0.0065",
+      "adjacent_acc": "0.9079",
+      "kappa": "0.7048",
+      "macro_f1_mean": 0.42477916036013835,
+      "macro_f1_std": 0.008389160949763984,
+      "accuracy_mean": 0.5180694156781522
+    },
+    "Majority": {
+      "macro_f1_mean": 0.08032991311982327
+    },
+    "ablation": {
+      "Only_readability": {
+        "macro_f1_mean": 0.383340098284404,
+        "macro_f1_std": 0.016940346746964808,
+        "n_features": 7
+      },
+      "Only_lexical": {
+        "macro_f1_mean": 0.4132913668187702,
+        "macro_f1_std": 0.017411890349519628,
+        "n_features": 11
+      },
+      "Only_syntactic": {
+        "macro_f1_mean": 0.37722166639291876,
+        "macro_f1_std": 0.009153885111914476,
+        "n_features": 16
+      },
+      "Without_readability": {
+        "macro_f1_mean": 0.410599453032113,
+        "drop_from_full": 0.01417970732802537
+      },
+      "Without_lexical": {
+        "macro_f1_mean": 0.41500739026488087,
+        "drop_from_full": 0.009771770095257482
+      },
+      "Without_syntactic": {
+        "macro_f1_mean": 0.4117840151564186,
+        "drop_from_full": 0.012995145203719749
+      }
+    }
+  },
+  "bert": {
+    "macro_f1": "0.4340 +/- 0.0271",
+    "accuracy": "0.5790 +/- 0.0183",
+    "adjacent_acc": "0.9656",
+    "kappa": "0.7947",
+    "macro_f1_mean": 0.4339665348749149,
+    "macro_f1_std": 0.02705468381171354,
+    "accuracy_mean": 0.579011485595933,
+    "per_class_f1_avg": {
+      "A1": 0.2908958763963819,
+      "A2": 0.6820627023468223,
+      "B1": 0.48350858613958464,
+      "B2": 0.6427846390641465,
+      "C1": 0.4778807386358873,
+      "C2": 0.026666666666666665
+    }
+  },
+  "ablation": {
+    "Only_readability": {
+      "macro_f1_mean": 0.383340098284404,
+      "macro_f1_std": 0.016940346746964808,
+      "n_features": 7
+    },
+    "Only_lexical": {
+      "macro_f1_mean": 0.4132913668187702,
+      "macro_f1_std": 0.017411890349519628,
+      "n_features": 11
+    },
+    "Only_syntactic": {
+      "macro_f1_mean": 0.37722166639291876,
+      "macro_f1_std": 0.009153885111914476,
+      "n_features": 16
+    },
+    "Without_readability": {
+      "macro_f1_mean": 0.410599453032113,
+      "drop_from_full": 0.01417970732802537
+    },
+    "Without_lexical": {
+      "macro_f1_mean": 0.41500739026488087,
+      "drop_from_full": 0.009771770095257482
+    },
+    "Without_syntactic": {
+      "macro_f1_mean": 0.4117840151564186,
+      "drop_from_full": 0.012995145203719749
+    }
+  },
+  "diagnostics": {
+    "probing_r2": "0.6506 +/- 0.0074",
+    "probing_r2_mean": 0.6506028571941085,
+    "group_probing_r2": {
+      "readability": 0.5820960995709299,
+      "lexical": 0.6292865380080972,
+      "syntactic": 0.5184230098626532
+    },
+    "agreement": {
+      "both_correct_pct": 38.34160170092134,
+      "xgb_only_pct": 13.46562721474132,
+      "bert_only_pct": 19.560595322466337,
+      "both_wrong_pct": 28.632175761871014
+    },
+    "bert_advantage_by_level": {
+      "A1": {
+        "xgb_acc": 0.4945054945054945,
+        "bert_acc": 0.17582417582417584,
+        "bert_advantage": -0.31868131868131866,
+        "n_samples": 182
+      },
+      "A2": {
+        "xgb_acc": 0.6463595839524517,
+        "bert_acc": 0.7979197622585439,
+        "bert_advantage": 0.15156017830609214,
+        "n_samples": 673
+      },
+      "B1": {
+        "xgb_acc": 0.3611556982343499,
+        "bert_acc": 0.48154093097913325,
+        "bert_advantage": 0.12038523274478335,
+        "n_samples": 623
+      },
+      "B2": {
+        "xgb_acc": 0.6551339285714286,
+        "bert_acc": 0.6796875,
+        "bert_advantage": 0.024553571428571397,
+        "n_samples": 896
+      },
+      "C1": {
+        "xgb_acc": 0.32891246684350134,
+        "bert_acc": 0.41114058355437666,
+        "bert_advantage": 0.08222811671087532,
+        "n_samples": 377
+      },
+      "C2": {
+        "xgb_acc": 0.014084507042253521,
+        "bert_acc": 0.014084507042253521,
+        "bert_advantage": 0.0,
+        "n_samples": 71
+      }
+    },
+    "top_probing_features": [
+      {
+        "feature": "guiraud_index",
+        "ridge_coef_abs": 0.7593243923337404
+      },
+      {
+        "feature": "flesch_reading_ease",
+        "ridge_coef_abs": 0.6250291854599086
+      },
+      {
+        "feature": "flesch_kincaid_grade",
+        "ridge_coef_abs": 0.5795975859170217
+      },
+      {
+        "feature": "mean_word_length",
+        "ridge_coef_abs": 0.4815506033558099
+      },
+      {
+        "feature": "n_types",
+        "ridge_coef_abs": 0.43929734585795155
+      },
+      {
+        "feature": "ttr",
+        "ridge_coef_abs": 0.35563768112666494
+      },
+      {
+        "feature": "mean_syllables",
+        "ridge_coef_abs": 0.32043360259994674
+      },
+      {
+        "feature": "coleman_liau_index",
+        "ridge_coef_abs": 0.29155368614340205
+      },
+      {
+        "feature": "automated_readability_index",
+        "ridge_coef_abs": 0.17830922110575434
+      },
+      {
+        "feature": "gunning_fog",
+        "ridge_coef_abs": 0.14900359131107713
+      }
+    ],
+    "xgb_per_class_f1": {
+      "A1": 0.5555394050086175,
+      "A2": 0.6035278153918886,
+      "B1": 0.39314281343541924,
+      "B2": 0.5810517871093321,
+      "C1": 0.3918837294508664,
+      "C2": 0.023529411764705882
+    },
+    "bert_per_class_f1": {
+      "A1": 0.2908958763963819,
+      "A2": 0.6820627023468223,
+      "B1": 0.48350858613958464,
+      "B2": 0.6427846390641465,
+      "C1": 0.4778807386358873,
+      "C2": 0.026666666666666665
+    },
+    "xgb_mae": 0.5825655563430191,
+    "bert_mae": 0.45570517363571933
+  }
+}

@@ -11,6 +11,7 @@ import sys
 import json
 import time
 import random
+import argparse
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -37,6 +38,7 @@ from transformers import (
 )
 
 from config import *
+from config import results_dir, figures_dir
 from data_loader import load_data, get_cv_splits
 
 # ── Reproducibility ───────────────────────────────────────────────────
@@ -63,7 +65,7 @@ if torch.cuda.is_available():
 # EXPERIMENT 1: EDA and Feature Analysis
 # ══════════════════════════════════════════════════════════════════════
 
-def run_eda(df, features_df, feature_groups):
+def run_eda(df, features_df, feature_groups, dataset_key: str):
     log("\n" + "="*60)
     log("EXPERIMENT 1: EDA & Feature Analysis")
     log("="*60)
@@ -74,7 +76,7 @@ def run_eda(df, features_df, feature_groups):
     counts.plot(kind="bar", ax=ax, color=sns.color_palette("viridis", 6))
     ax.set_xlabel("CEFR Level")
     ax.set_ylabel("Count")
-    ax.set_title("CEFR Level Distribution in CEFR-SP Dataset")
+    ax.set_title(f"CEFR Level Distribution ({dataset_key})")
     ax.set_xticklabels(CEFR_LEVELS, rotation=0)
     for i, v in enumerate(counts):
         ax.text(i, v + 30, str(v), ha="center", fontsize=9)
@@ -656,11 +658,27 @@ def run_diagnostics(features_df, labels, bert_logits, splits, feature_groups,
 # ══════════════════════════════════════════════════════════════════════
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default=DEFAULT_DATASET_KEY)
+    args = parser.parse_args()
+    dataset_key = args.dataset
+
     start_time = time.time()
+
+    # Per-dataset output dirs
+    global RESULTS_DIR, FIGURES_DIR, MODELS_DIR
+
+    RESULTS_DIR = results_dir(dataset_key)
+    FIGURES_DIR = figures_dir(dataset_key)
+    MODELS_DIR = os.path.join(RESULTS_DIR, "models")
+
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    os.makedirs(FIGURES_DIR, exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
 
     # Load data
     log("Loading data...")
-    df = load_data()
+    df = load_data(dataset_key=dataset_key)
     splits = get_cv_splits(df)
 
     # Load cached features
@@ -679,9 +697,15 @@ def main():
         return
 
     log(f"Features: {features_df.shape[1]} total")
+    if len(features_df) != len(df):
+        raise ValueError(
+            f"Feature/Data mismatch for dataset={dataset_key}: "
+            f"features_df has {len(features_df)} rows, df has {len(df)} rows. "
+            f"Did you run feature_extraction.py --dataset {dataset_key}?"
+        )
 
     # Experiment 1: EDA
-    corr_df, group_corr_df = run_eda(df, features_df, feature_groups)
+    corr_df, group_corr_df = run_eda(df, features_df, feature_groups, dataset_key)
 
     # Experiment 2: Interpretable Models
     feature_results, ablation_results, imp_df = run_interpretable_models(
@@ -714,7 +738,7 @@ def main():
 
     summary = {
         "experiment_info": {
-            "dataset": "CEFR-SP",
+            "dataset": dataset_key,
             "n_samples": len(df),
             "n_features": features_df.shape[1],
             "n_folds": N_FOLDS,

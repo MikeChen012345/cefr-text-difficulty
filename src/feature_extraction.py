@@ -21,7 +21,7 @@ import torch
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 from tqdm import tqdm
 
-from config import SEED, DEVICE, RESULTS_DIR
+from config import SEED, DEVICE, results_dir, DEFAULT_DATASET_KEY
 from data_loader import load_data
 
 np.random.seed(SEED)
@@ -283,12 +283,28 @@ def extract_all_features(df, use_lftk=True, use_surprisal=True):
 
 
 if __name__ == "__main__":
-    df = load_data()
-    features_df, feature_groups = extract_all_features(df, use_lftk=True, use_surprisal=True)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default=DEFAULT_DATASET_KEY)
+    parser.add_argument("--no_surprisal", action="store_true")
+    parser.add_argument("--no_lftk", action="store_true")
+    args = parser.parse_args()
 
-    # Save features
-    features_df.to_csv(os.path.join(RESULTS_DIR, "features.csv"), index=False)
-    with open(os.path.join(RESULTS_DIR, "feature_groups.json"), "w") as f:
+    df = load_data(dataset_key=args.dataset)
+
+    # Ignore surprisal features for now
+    # features_df, feature_groups = extract_all_features(
+    #     df,
+    #     use_lftk=not args.no_lftk,
+    #     use_surprisal=not args.no_surprisal
+    # )
+    features_df, feature_groups = extract_all_features(df, use_lftk=False, use_surprisal=False)
+
+    out_dir = results_dir(args.dataset)
+    os.makedirs(out_dir, exist_ok=True)
+
+    features_df.to_csv(os.path.join(out_dir, "features.csv"), index=False)
+    with open(os.path.join(out_dir, "feature_groups.json"), "w") as f:
         json.dump(feature_groups, f, indent=2)
 
-    print(f"\nSaved {features_df.shape[1]} features for {features_df.shape[0]} sentences")
+    print(f"\nSaved {features_df.shape[1]} features for {features_df.shape[0]} samples to {out_dir}")
