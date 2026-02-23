@@ -292,6 +292,7 @@ if __name__ == "__main__":
 
     df = load_data(dataset_key=args.dataset)
 
+    # Ignore surprisal features for now
     # features_df, feature_groups = extract_all_features(
     #     df,
     #     use_lftk=not args.no_lftk,
