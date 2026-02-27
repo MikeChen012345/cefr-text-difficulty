@@ -23,6 +23,7 @@ import time
 import json
 
 import pandas as pd
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import tqdm
 from pathlib import Path
@@ -37,7 +38,9 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from data_loader import load_data_split
 from prompt import SYSTEM_PROMPT_BASE, SYSTEM_PROMPT_COT, system_prompt_few_shots
-from config import RESULTS_DIR, FIGURES_DIR
+from config import results_dir, figures_dir
+RESULTS_DIR = results_dir("cefr_sp_en")
+FIGURES_DIR = figures_dir("cefr_sp_en")
 
 logger = logging.getLogger(__name__)
 
@@ -352,18 +355,14 @@ def plot_model_size_summary(
     df: pd.DataFrame,
     results_dir: Path | None = None,
     out_dir: Path | None = None,
-    few_shots: Optional[int] = None,
-) -> List[Path]:
+    few_shots: Optional[int] = None):
     """Create 3 figures (accuracy, avg token usage, avg elapsed time) split by CoT.
 
     X-axis: model name
     Y-axis: metric value
     Per model: two datapoints (CoT=True in red, CoT=False in blue)
 
-    If multiple `few_shots` values exist in the summary, pass `few_shots` to select one.
-
-    Returns:
-        List of paths to the saved figures.
+    If multiple `few_shots` values exist in the summary, pass `few_shots` to select one. Otherwise, defaults to 0-shot if present, or the smallest number of shots available.
     """
 
     results_dir = results_dir or Path(RESULTS_DIR)
@@ -470,7 +469,67 @@ def plot_model_size_summary(
     out_path = out_dir / f"llm_model_size_summary{suffix}.png"
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
-    return [out_path]
+
+    # Create one faceted confusion-matrix figure: rows = [No CoT, CoT], columns = model indices.
+    from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
+    labels = ["A1", "A2", "B1", "B2", "C1", "C2"]
+    model_cols = sorted(int(v) for v in plot_df["model_idx"].unique().tolist())
+
+    n_cols = len(model_cols)
+    fig_cm, axes_cm = plt.subplots(nrows=2, ncols=n_cols, figsize=(4 * n_cols, 8))
+
+    cot_rows = [False, True]
+    for row_i, cot_val in enumerate(cot_rows):
+        for col_i in range(n_cols):
+            ax = axes_cm[row_i, col_i]
+
+            if col_i >= len(model_cols):
+                ax.axis("off")
+                continue
+
+            model_idx_val = model_cols[col_i]
+            subset_df = plot_df[(plot_df["model_idx"] == model_idx_val) & (plot_df["cot"] == cot_val)]
+
+            true_labels = []
+            predicted_labels = []
+            for _, row in subset_df.iterrows():
+                results_file = results_dir / f"llm_model{int(row['model_idx'])}_CoT{row['cot']}_Shot{int(row['few_shots'])}.json"
+                if results_file.exists():
+                    with results_file.open("r", encoding="utf-8") as f:
+                        results = json.load(f)
+                    for r in results:
+                        true_labels.append(r.get("true_label", ""))
+                        predicted_labels.append(r.get("predicted_label", ""))
+
+            if true_labels and predicted_labels:
+                cm = confusion_matrix(true_labels, predicted_labels, labels=labels)
+            else:
+                cm = np.zeros((len(labels), len(labels)), dtype=int)
+
+            disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+            disp.plot(ax=ax, cmap="Blues", colorbar=False)
+
+            if row_i == 0:
+                ax.set_title(f"Model {model_idx_val}")
+            else:
+                ax.set_title("")
+
+            if col_i == 0:
+                ax.set_ylabel(f"{'CoT' if cot_val else 'No CoT'}\nTrue label")
+            else:
+                ax.set_ylabel("")
+
+            if row_i == len(cot_rows) - 1:
+                ax.set_xlabel("Predicted label")
+            else:
+                ax.set_xlabel("")
+
+    fig_cm.tight_layout()
+    out_path_cm = out_dir / f"llm_model_size_confusion_matrix{suffix}.png"
+    fig_cm.savefig(out_path_cm, dpi=200)
+    plt.close(fig_cm)
+    print(f"Saved model size summary plots to: {out_dir}")
 
 
 def plot_prompt_summary(
@@ -606,6 +665,47 @@ def plot_prompt_summary(
     out_path = out_dir / "llm_prompt_analysis_by_shots.png"
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
+
+    # Create confusion matrix plots for each model and CoT setting, faceted by number of shots.
+    # for model_idx_val in sorted(plot_df["model_idx"].unique()):
+    #     for cot_val in [False, True]:
+    #         subset_df = plot_df[(plot_df["model_idx"] == model_idx_val) & (plot_df["cot"] == cot_val)]
+    #         if subset_df.empty:
+    #             continue
+
+    #         n_shots_list = sorted(subset_df["few_shots"].unique().tolist())
+    #         n_cols = min(len(n_shots_list), 3)
+    #         n_rows = (len(n_shots_list) + n_cols - 1) // n_cols
+    #         fig_cm, axes_cm = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(4 * n_cols, 4 * n_rows))
+    #         axes_cm = axes_cm.flatten() if isinstance(axes_cm, np.ndarray) else [axes_cm]
+
+    #         for i, shots in enumerate(n_shots_list):
+    #             results_file = results_dir / f"llm_model{int(model_idx_val)}_CoT{cot_val}_Shot{shots}.json"
+    #             if not results_file.exists():
+    #                 continue
+
+    #             with results_file.open("r", encoding="utf-8") as f:
+    #                 results = json.load(f)
+
+    #             true_labels = [r.get("true_label", "") for r in results]
+    #             predicted_labels = [r.get("predicted_label", "") for r in results]
+
+    #             from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
+    #             cm = confusion_matrix(true_labels, predicted_labels, labels=["A1", "A2", "B1", "B2", "C1", "C2"])
+    #             disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["A1", "A2", "B1", "B2", "C1", "C2"])
+    #             disp.plot(ax=axes_cm[i], cmap="Blues", colorbar=False)
+    #             axes_cm[i].set_title(f"Model {model_idx_to_label.get(int(model_idx_val), f'model_{model_idx_val}')} - {'CoT' if cot_val else 'No CoT'} - {shots}-shot")
+
+    #             # Hide any unused subplots.
+    #             for j in range(i + 1, len(axes_cm)):
+    #                 axes_cm[j].axis("off")
+
+    #             out_path_cm = out_dir / f"llm_confusion_matrices_model{model_idx_val}_CoT{cot_val}_Shot{shots}.png"
+    #             fig_cm.tight_layout()
+    #             fig_cm.savefig(out_path_cm, dpi=200)
+    #             plt.close(fig_cm)
+
     print(f"Saved prompt analysis figure to: {out_path}")
 
 
@@ -671,8 +771,8 @@ def main(mode: Optional[str] = None) -> None:
 if __name__ == "__main__":
     # main(mode="model_size")
     # main(mode="prompt")
-    # plot_model_size_summary(df=summarize_results())
-    plot_prompt_summary(df=summarize_results(), model_idx=[2, 3])
+    plot_model_size_summary(df=summarize_results())
+    # plot_prompt_summary(df=summarize_results(), model_idx=[2, 3])
     
     # model_idx = 0
     # cot = True
