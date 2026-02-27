@@ -671,6 +671,12 @@ wheels = [
 ]
 
 [[package]]
+name = "dataloader"
+version = "2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b4/73/1f6af2e50749071b763e0b963fd23de2b00e3846ebf3296e025081a59d00/dataloader-2.0.tar.gz", hash = "sha256:eb13b433ac0a7634f680065ed579a747e360e1fb79da47005018f9ed6dbc48ec", size = 9130, upload-time = "2016-03-31T18:52:26.015Z" }
+
+[[package]]
 name = "datasets"
 version = "4.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3273,6 +3279,7 @@ name = "research-workspace"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "dataloader" },
     { name = "datasets" },
     { name = "globus-sdk" },
     { name = "langchain" },
@@ -3299,6 +3306,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "dataloader", specifier = ">=2.0" },
     { name = "datasets", specifier = ">=4.5.0" },
     { name = "globus-sdk", specifier = ">=4.4.0" },
     { name = "langchain", specifier = ">=1.2.10" },

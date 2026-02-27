@@ -1,0 +1,2402 @@
+[
+  {
+    "text": "She wants to play cards .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 601,
+    "elapsed_time": 1.724790096282959
+  },
+  {
+    "text": "I sent my girlfriend red roses .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 610,
+    "elapsed_time": 1.557662010192871
+  },
+  {
+    "text": "There were mice scratching in the walls .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 640,
+    "elapsed_time": 1.9678983688354492
+  },
+  {
+    "text": "Matos died on 8 June 2019 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 724,
+    "elapsed_time": 2.4762251377105713
+  },
+  {
+    "text": "You should stay with your sister .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 593,
+    "elapsed_time": 1.6556005477905273
+  },
+  {
+    "text": "Burns died on 25 May 2019 , at the age of 99 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 729,
+    "elapsed_time": 2.263695478439331
+  },
+  {
+    "text": "He painted the house next to ours .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 662,
+    "elapsed_time": 2.070098876953125
+  },
+  {
+    "text": "Ullsten died on 28 May 2018 at the age of 86 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 739,
+    "elapsed_time": 2.018073797225952
+  },
+  {
+    "text": "McAlpine died on 4 March 2018 at the age of 81 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 718,
+    "elapsed_time": 2.2794623374938965
+  },
+  {
+    "text": "Do you know what you 're doing this weekend ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 569,
+    "elapsed_time": 1.7467997074127197
+  },
+  {
+    "text": "Are you in a league ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 582,
+    "elapsed_time": 1.2343015670776367
+  },
+  {
+    "text": "Wass died on 4 January 2017 in London at the age of 93 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 640,
+    "elapsed_time": 1.4938089847564697
+  },
+  {
+    "text": "Do you have a car ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 577,
+    "elapsed_time": 1.2199594974517822
+  },
+  {
+    "text": "He died on 12 May 2019 at the age of 80 .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 662,
+    "elapsed_time": 2.241281509399414
+  },
+  {
+    "text": "I like your denim jacket .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 572,
+    "elapsed_time": 2.012732744216919
+  },
+  {
+    "text": "Pazos died on 24 May 2019 , at the age of 89 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 660,
+    "elapsed_time": 2.083712577819824
+  },
+  {
+    "text": "These seats are ours .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 589,
+    "elapsed_time": 1.2612602710723877
+  },
+  {
+    "text": "The DVD was released on October 10 , 2006 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 637,
+    "elapsed_time": 1.8029959201812744
+  },
+  {
+    "text": "I am trying to help you .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 621,
+    "elapsed_time": 1.9845681190490723
+  },
+  {
+    "text": "Trass died on 14 February 2017 , at the age of 88 .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 604,
+    "elapsed_time": 1.7629234790802002
+  },
+  {
+    "text": "It 's 10 p. m.",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 582,
+    "elapsed_time": 1.4098894596099854
+  },
+  {
+    "text": "English died on November 16 , 2018 in London at the age of 81 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 679,
+    "elapsed_time": 1.788301944732666
+  },
+  {
+    "text": "Is that your bike ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 578,
+    "elapsed_time": 1.487734079360962
+  },
+  {
+    "text": "Our sun looks yellow .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 582,
+    "elapsed_time": 2.03869891166687
+  },
+  {
+    "text": "Sheep and cows eat grass for food .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 568,
+    "elapsed_time": 1.3490328788757324
+  },
+  {
+    "text": "No one brought drinks .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 606,
+    "elapsed_time": 1.4870367050170898
+  },
+  {
+    "text": "I need a new one .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 592,
+    "elapsed_time": 1.420114278793335
+  },
+  {
+    "text": "Is it your birthday ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 559,
+    "elapsed_time": 1.306931495666504
+  },
+  {
+    "text": "Sometimes I sleep until noon .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 626,
+    "elapsed_time": 1.9136953353881836
+  },
+  {
+    "text": "He died , aged 80 on 23 July , 2014 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 616,
+    "elapsed_time": 1.2889854907989502
+  },
+  {
+    "text": "He died on 6 January 2015 , aged 82 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 615,
+    "elapsed_time": 2.0105297565460205
+  },
+  {
+    "text": "Delpire died in Paris on 26 September 2017 in Paris at the age of 91 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 650,
+    "elapsed_time": 2.161094903945923
+  },
+  {
+    "text": "Did you lose yours ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 612,
+    "elapsed_time": 1.5994818210601807
+  },
+  {
+    "text": "Katsue 's birthday is September 8th .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 604,
+    "elapsed_time": 1.733238935470581
+  },
+  {
+    "text": "Treacher died in April 2018 at the age of 93 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 629,
+    "elapsed_time": 1.2665863037109375
+  },
+  {
+    "text": "Her daughter wants to become a personal trainer .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 667,
+    "elapsed_time": 2.3490304946899414
+  },
+  {
+    "text": "I have two fish in a bowl .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 549,
+    "elapsed_time": 1.6477200984954834
+  },
+  {
+    "text": "The team 's colors are red and white .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 601,
+    "elapsed_time": 1.7206668853759766
+  },
+  {
+    "text": "Stubing died on 3 July 2017 in Rome , age 76 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 663,
+    "elapsed_time": 1.4993298053741455
+  },
+  {
+    "text": "Do you worry about what you eat ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 570,
+    "elapsed_time": 1.3483290672302246
+  },
+  {
+    "text": "He has many works .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 576,
+    "elapsed_time": 1.6578757762908936
+  },
+  {
+    "text": "Does he have a wife ?",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 590,
+    "elapsed_time": 1.2991511821746826
+  },
+  {
+    "text": "Please give me the time .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 592,
+    "elapsed_time": 1.7517199516296387
+  },
+  {
+    "text": "My husband works hard .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 541,
+    "elapsed_time": 1.4039578437805176
+  },
+  {
+    "text": "He gave her a loving look .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 583,
+    "elapsed_time": 1.4908406734466553
+  },
+  {
+    "text": "Emma sat down next to her sister .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 581,
+    "elapsed_time": 1.3461940288543701
+  },
+  {
+    "text": "There are three main types of chocolate : white chocolate , milk chocolate , and dark chocolate .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 589,
+    "elapsed_time": 1.2548596858978271
+  },
+  {
+    "text": "Let 's try to read .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 654,
+    "elapsed_time": 1.7931346893310547
+  },
+  {
+    "text": "Foxes often live in forests .",
+    "true_label": "A1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 761,
+    "elapsed_time": 2.7288739681243896
+  },
+  {
+    "text": "He died on 18 October 2017 .",
+    "true_label": "A1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 667,
+    "elapsed_time": 2.4409568309783936
+  },
+  {
+    "text": "In the United States , each state has its own laws .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 615,
+    "elapsed_time": 1.7528631687164307
+  },
+  {
+    "text": "We did n't want to wake the sleeping girls .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 666,
+    "elapsed_time": 1.9688353538513184
+  },
+  {
+    "text": "The Seto Ohashi Bridge was built in the 1980s .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 682,
+    "elapsed_time": 1.7673423290252686
+  },
+  {
+    "text": "We 've come here for a holiday .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 623,
+    "elapsed_time": 2.071319580078125
+  },
+  {
+    "text": "I 'm looking for a carpenter .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 638,
+    "elapsed_time": 2.0177249908447266
+  },
+  {
+    "text": "I have never met his girlfriend but I have seen her .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 641,
+    "elapsed_time": 1.7542283535003662
+  },
+  {
+    "text": "Construction began on January 5 , 1933 .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 604,
+    "elapsed_time": 1.8207004070281982
+  },
+  {
+    "text": "You are as beautiful as ever to me .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 612,
+    "elapsed_time": 1.4188518524169922
+  },
+  {
+    "text": "They usually go to sleep early .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 632,
+    "elapsed_time": 1.8321340084075928
+  },
+  {
+    "text": "If I lived here , I 'd be so happy !",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 680,
+    "elapsed_time": 2.518589973449707
+  },
+  {
+    "text": "English has developed over the course of more than 1,400 years .",
+    "true_label": "A2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 613,
+    "elapsed_time": 2.632164239883423
+  },
+  {
+    "text": "There are many kinds of fruit in the world .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 661,
+    "elapsed_time": 2.0277929306030273
+  },
+  {
+    "text": "She joined the U.S. Sailing Team .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 675,
+    "elapsed_time": 1.9357004165649414
+  },
+  {
+    "text": "You might meet Amanda there .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 608,
+    "elapsed_time": 2.2412257194519043
+  },
+  {
+    "text": "Her hair was as soft as silk .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 602,
+    "elapsed_time": 1.7224862575531006
+  },
+  {
+    "text": "They were married in Rome .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 626,
+    "elapsed_time": 1.8544061183929443
+  },
+  {
+    "text": "There are also journals , online articles and blogs available .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 638,
+    "elapsed_time": 2.237678289413452
+  },
+  {
+    "text": "She dropped the napkin on the floor .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 597,
+    "elapsed_time": 1.338150978088379
+  },
+  {
+    "text": "He has edited and written many books and articles .",
+    "true_label": "A2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 640,
+    "elapsed_time": 1.7436308860778809
+  },
+  {
+    "text": "Katsue 's son is an accountant for Toyota .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 634,
+    "elapsed_time": 2.0089359283447266
+  },
+  {
+    "text": "Is there a problem ?",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 578,
+    "elapsed_time": 1.0191900730133057
+  },
+  {
+    "text": "Are your boots made from leather ?",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 659,
+    "elapsed_time": 2.1717231273651123
+  },
+  {
+    "text": "He died on 12 July 2019 , four days before his 85th birthday .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 646,
+    "elapsed_time": 2.028594732284546
+  },
+  {
+    "text": "Which Canadian cities have you visited ?",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 671,
+    "elapsed_time": 2.217792510986328
+  },
+  {
+    "text": "The city is divided into two parts by the river Ebro .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 666,
+    "elapsed_time": 1.923785924911499
+  },
+  {
+    "text": "Who took the last slice of chocolate cake that I was saving ?",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 610,
+    "elapsed_time": 1.8366129398345947
+  },
+  {
+    "text": "Sometimes the baby would not stop crying .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 603,
+    "elapsed_time": 1.9811251163482666
+  },
+  {
+    "text": "Fortunately , salad was Gina 's favorite food .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 589,
+    "elapsed_time": 1.6895105838775635
+  },
+  {
+    "text": "The rookie is good but needs more practice .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 684,
+    "elapsed_time": 2.007148504257202
+  },
+  {
+    "text": "The masked man ran from the bank .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 698,
+    "elapsed_time": 2.430349349975586
+  },
+  {
+    "text": "His bird died suddenly .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 714,
+    "elapsed_time": 2.753945827484131
+  },
+  {
+    "text": "Do you think that it will work ?",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 560,
+    "elapsed_time": 1.111877679824829
+  },
+  {
+    "text": "He does n't know how to do it .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 576,
+    "elapsed_time": 1.4763693809509277
+  },
+  {
+    "text": "She would like you to come with us .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 633,
+    "elapsed_time": 1.7397632598876953
+  },
+  {
+    "text": "Those fishermen only use nets .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 672,
+    "elapsed_time": 2.104605197906494
+  },
+  {
+    "text": "Murt died of cancer on 1 December 2014 , aged 68 .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 614,
+    "elapsed_time": 1.5010969638824463
+  },
+  {
+    "text": "My toast was a perfect golden brown .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 613,
+    "elapsed_time": 1.5041680335998535
+  },
+  {
+    "text": "The area was settled in 972 .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 625,
+    "elapsed_time": 1.5124387741088867
+  },
+  {
+    "text": "My mother is learning to take it easy .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 620,
+    "elapsed_time": 1.5092206001281738
+  },
+  {
+    "text": "The government is led by the Prime Minister , who selects all the remaining ministers .",
+    "true_label": "A2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 652,
+    "elapsed_time": 1.9303762912750244
+  },
+  {
+    "text": "The park was created on 12 June 1981 .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 584,
+    "elapsed_time": 1.5144953727722168
+  },
+  {
+    "text": "You look like your sister .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 563,
+    "elapsed_time": 1.5647821426391602
+  },
+  {
+    "text": "The movie received mixed reviews .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 585,
+    "elapsed_time": 2.2288405895233154
+  },
+  {
+    "text": "Look at that shooting star !",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 533,
+    "elapsed_time": 1.2723515033721924
+  },
+  {
+    "text": "Caps and goals updated as of June 29 , 2019 .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 652,
+    "elapsed_time": 2.001638889312744
+  },
+  {
+    "text": "The airport opened June 16 , 1941 , just before US entry into World War II .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 694,
+    "elapsed_time": 1.899078607559204
+  },
+  {
+    "text": "The town has four doctors and one pharmacy .",
+    "true_label": "A2",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 566,
+    "elapsed_time": 1.7434842586517334
+  },
+  {
+    "text": "Did you have a chance to speak to your boss ?",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 608,
+    "elapsed_time": 1.7895441055297852
+  },
+  {
+    "text": "Louis finds fashion interesting .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 701,
+    "elapsed_time": 2.301486015319824
+  },
+  {
+    "text": "Trass died on 14 February 2017 , aged 88 .",
+    "true_label": "A2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 652,
+    "elapsed_time": 1.9816174507141113
+  },
+  {
+    "text": "More women being shunned from higher executive positions are protesting on social media .",
+    "true_label": "B1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 735,
+    "elapsed_time": 2.2383272647857666
+  },
+  {
+    "text": "It was one of the 75 divisions set up for the first federal election in 1901 .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 627,
+    "elapsed_time": 2.224916458129883
+  },
+  {
+    "text": "White is regarded by many as England 's first ecologist , and one of those who shaped the modern attitude of respect for nature .",
+    "true_label": "B1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 689,
+    "elapsed_time": 2.251570224761963
+  },
+  {
+    "text": "It took me a while to understand what he said .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 620,
+    "elapsed_time": 1.9910566806793213
+  },
+  {
+    "text": "In appearance , it is light yellow and opaque , smooth and creamy .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 622,
+    "elapsed_time": 1.5859272480010986
+  },
+  {
+    "text": "Boys wanted for the team were asked to tryout .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 656,
+    "elapsed_time": 2.0040740966796875
+  },
+  {
+    "text": "She 's already done the sweeping .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 699,
+    "elapsed_time": 2.3132712841033936
+  },
+  {
+    "text": "From the beginning , graphic designs were used to tell different teams apart .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 614,
+    "elapsed_time": 1.7486605644226074
+  },
+  {
+    "text": "Production and use of energy resources is important to the economy of the world .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 709,
+    "elapsed_time": 1.951308250427246
+  },
+  {
+    "text": "The students hoped to raise money for their team .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 632,
+    "elapsed_time": 2.570197582244873
+  },
+  {
+    "text": "The National Parks Act of 1980 was written to record what national parks are for , and how they would be chosen and looked after .",
+    "true_label": "B1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 705,
+    "elapsed_time": 2.2751998901367188
+  },
+  {
+    "text": "The rules do n't allow you to work full-time .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 602,
+    "elapsed_time": 1.5612430572509766
+  },
+  {
+    "text": "French is the only official language in France as whole and in these municipalities .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 662,
+    "elapsed_time": 2.2044363021850586
+  },
+  {
+    "text": "George knew he was good at playing hide and seek , and advised Tina to hide between the wall and the tree .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 645,
+    "elapsed_time": 1.678333044052124
+  },
+  {
+    "text": "There should be multiple ways of sending emergency information so that if one does not work , the others might .",
+    "true_label": "B1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 773,
+    "elapsed_time": 2.9318344593048096
+  },
+  {
+    "text": "They are often known in English as planes or plane trees .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 641,
+    "elapsed_time": 1.9608216285705566
+  },
+  {
+    "text": "Homes built with brick are common in the US .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 653,
+    "elapsed_time": 1.7498435974121094
+  },
+  {
+    "text": "She always wore fashionable coats .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 625,
+    "elapsed_time": 1.5960540771484375
+  },
+  {
+    "text": "I traveled around Italy before I went to my aunt 's place in Southern France .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 661,
+    "elapsed_time": 1.7771806716918945
+  },
+  {
+    "text": "I do n't think that he will be able to make it through this winter .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 661,
+    "elapsed_time": 2.2532501220703125
+  },
+  {
+    "text": "Blackmail is against the law .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 610,
+    "elapsed_time": 1.5005114078521729
+  },
+  {
+    "text": "In the 1880s , he worked as chief engineer of a railroad India .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 635,
+    "elapsed_time": 1.9433488845825195
+  },
+  {
+    "text": "Food and equipment are brought to the South Base Camp by Sherpas or porters , with the help of animals like yaks .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 649,
+    "elapsed_time": 1.5120604038238525
+  },
+  {
+    "text": "The third rail is usually located outside the two running rails , but occasionally between them .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 704,
+    "elapsed_time": 2.253387928009033
+  },
+  {
+    "text": "The assignment is impossible to finish because it 's so time - consuming .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 568,
+    "elapsed_time": 1.5088047981262207
+  },
+  {
+    "text": "Basketball today is played by more than 300 million people worldwide , making it one of the most popular team sports .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 718,
+    "elapsed_time": 2.495548963546753
+  },
+  {
+    "text": "Sometimes , a train does not have enough speed to make it over the 215 ft top hat element .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 735,
+    "elapsed_time": 2.574991464614868
+  },
+  {
+    "text": "He is a man whom I have trusted with all my investments .",
+    "true_label": "B1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 649,
+    "elapsed_time": 2.4990346431732178
+  },
+  {
+    "text": "The hottest month is July , with an average temperature of .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 711,
+    "elapsed_time": 3.007519483566284
+  },
+  {
+    "text": "I wish I had done it differently .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 671,
+    "elapsed_time": 2.2417163848876953
+  },
+  {
+    "text": "He was charged with making a false report .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 617,
+    "elapsed_time": 1.4362905025482178
+  },
+  {
+    "text": "Sex selection is not new .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 615,
+    "elapsed_time": 1.779534101486206
+  },
+  {
+    "text": "Some rice proteins are regarded as the causes of allergy in some people .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 645,
+    "elapsed_time": 1.4880187511444092
+  },
+  {
+    "text": "While hundreds of comic series have been produced in the Franco- Belgian group , some are more notable than others .",
+    "true_label": "B1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 642,
+    "elapsed_time": 2.2740161418914795
+  },
+  {
+    "text": "During the new library association 's first two years 75 volumes were purchased with an additional 150 donated .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 731,
+    "elapsed_time": 2.4937562942504883
+  },
+  {
+    "text": "A computer program is written by a programmer .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 660,
+    "elapsed_time": 2.0751821994781494
+  },
+  {
+    "text": "Numbers seven and eight on the list are of a different kind from the first six , and are generally not considered by the other authors .",
+    "true_label": "B1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 642,
+    "elapsed_time": 1.7418301105499268
+  },
+  {
+    "text": "The county continued to be developed for agriculture and is still largely rural .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 686,
+    "elapsed_time": 2.245750665664673
+  },
+  {
+    "text": "Shall I invite your colleagues to Sandra 's farewell party ?",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 682,
+    "elapsed_time": 2.5857670307159424
+  },
+  {
+    "text": "The division was one of the original 65 divisions contested at the first federal election .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 650,
+    "elapsed_time": 1.996462345123291
+  },
+  {
+    "text": "They were n't hopeful about finding the missing boys .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 687,
+    "elapsed_time": 2.536207675933838
+  },
+  {
+    "text": "I keep going over it again and again in my mind .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 625,
+    "elapsed_time": 1.9892280101776123
+  },
+  {
+    "text": "We must find something that will cause him to change his mind .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 635,
+    "elapsed_time": 2.165511131286621
+  },
+  {
+    "text": "The album has been received well by critics .",
+    "true_label": "B1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 617,
+    "elapsed_time": 1.6894190311431885
+  },
+  {
+    "text": "In 2010 , there was an estimated 8,638 Kayapo people .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 690,
+    "elapsed_time": 2.499101400375366
+  },
+  {
+    "text": "A tear rolled down her cheek .",
+    "true_label": "B1",
+    "predicted_label": "A1",
+    "rationale": "",
+    "token_usage": 625,
+    "elapsed_time": 2.021888256072998
+  },
+  {
+    "text": "He considered it a new start and stayed positive .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 615,
+    "elapsed_time": 1.742173194885254
+  },
+  {
+    "text": "I found her crying quietly in her room the day her cat died .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 725,
+    "elapsed_time": 2.285444974899292
+  },
+  {
+    "text": "Currently the university has about 27,000 students and employs about 4,600 people .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 699,
+    "elapsed_time": 2.307110071182251
+  },
+  {
+    "text": "She drove fast because she wanted to get there on time .",
+    "true_label": "B1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 569,
+    "elapsed_time": 1.2158091068267822
+  },
+  {
+    "text": "He had climbed 10 out of 14 eight - thousanders , all without supplementary oxygen .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 759,
+    "elapsed_time": 2.273886203765869
+  },
+  {
+    "text": "Sleet is predicted tonight .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 606,
+    "elapsed_time": 1.7238998413085938
+  },
+  {
+    "text": "Electric rays are found from shallow coastal waters down to at least 1000 m depth .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 721,
+    "elapsed_time": 2.29660964012146
+  },
+  {
+    "text": "A non-zero real number can have a negative number as its power .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 662,
+    "elapsed_time": 1.9517738819122314
+  },
+  {
+    "text": "Parish councils are run by volunteer councilors who are elected to serve for four years and are not paid .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 634,
+    "elapsed_time": 1.9884018898010254
+  },
+  {
+    "text": "The earliest playwright in Western literature with surviving works are the Ancient Greeks .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 691,
+    "elapsed_time": 2.5098235607147217
+  },
+  {
+    "text": "Skin prick test , the most efficient diagnosis , shows the reactions in a short period .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 673,
+    "elapsed_time": 2.993847608566284
+  },
+  {
+    "text": "Geographers are historically known as people who make maps .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 714,
+    "elapsed_time": 2.032012462615967
+  },
+  {
+    "text": "There were 26 reigns and 1 vacancy .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 655,
+    "elapsed_time": 2.749976634979248
+  },
+  {
+    "text": "Political philosophy is a branch of philosophy .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 677,
+    "elapsed_time": 1.999225378036499
+  },
+  {
+    "text": "Bear often answers major questions in contemporary science and culture with fictional solutions .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 725,
+    "elapsed_time": 2.7011666297912598
+  },
+  {
+    "text": "They did n't know when they were supposed to leave the stadium so everyone ended up lingering .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 702,
+    "elapsed_time": 2.502199172973633
+  },
+  {
+    "text": "Before the Early Dynastic Period , Egypt was settled with small , separate villages .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 609,
+    "elapsed_time": 2.009216070175171
+  },
+  {
+    "text": "However , this usage means that cheap handcuffs are used in times where steel ones would normally be unused for long times .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 817,
+    "elapsed_time": 3.5067524909973145
+  },
+  {
+    "text": "Since it became widespread in the 19th century , cholera has killed tens of millions of people .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 741,
+    "elapsed_time": 2.8250041007995605
+  },
+  {
+    "text": "Children 's literature can be divided into several categories , but it is most easily categorized by genre or the intended age of the reader .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 726,
+    "elapsed_time": 1.8337438106536865
+  },
+  {
+    "text": "Modern cladistic work has not been conclusive .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 662,
+    "elapsed_time": 2.005774974822998
+  },
+  {
+    "text": "The game features the revived ECW brand , and it takes its place alongside the established Raw and SmackDown !",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 721,
+    "elapsed_time": 2.3249387741088867
+  },
+  {
+    "text": "Ubuntu divides most software into four domains to reflect differences in licensing and the degree of support available .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 658,
+    "elapsed_time": 1.898071527481079
+  },
+  {
+    "text": "Mostly songs in this album are smooth and midpaced , while some are faster .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 617,
+    "elapsed_time": 1.7646088600158691
+  },
+  {
+    "text": "Another application of material science in industry is the making of composite materials .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 741,
+    "elapsed_time": 2.786221981048584
+  },
+  {
+    "text": "At first , historical linguistics was comparative linguistics .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 667,
+    "elapsed_time": 2.2682197093963623
+  },
+  {
+    "text": "The pygmy killer whale avoids human contact .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 730,
+    "elapsed_time": 2.739532709121704
+  },
+  {
+    "text": "Since 17 March 1982 , he has been in a coma following a knee operation .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 622,
+    "elapsed_time": 1.7271497249603271
+  },
+  {
+    "text": "A tropical wave normally follows an area of sinking , intensely dry air , blowing from the northeast .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 671,
+    "elapsed_time": 1.7206578254699707
+  },
+  {
+    "text": "The feeling of a static electric shock is caused by the stimulation of nerves as the neutralizing current flows through the human body .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 715,
+    "elapsed_time": 2.2135753631591797
+  },
+  {
+    "text": "Thrust and specific impulse should not be confused .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 581,
+    "elapsed_time": 1.5121779441833496
+  },
+  {
+    "text": "Canada provided a thermal plasma analyzer .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 782,
+    "elapsed_time": 3.0102498531341553
+  },
+  {
+    "text": "Sgr A West looks like a three - arm spiral from the point of view of the Earth .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 726,
+    "elapsed_time": 1.8953030109405518
+  },
+  {
+    "text": "My renewed application was denied .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 611,
+    "elapsed_time": 1.9949359893798828
+  },
+  {
+    "text": "The testes have two primary functions : to produce hormones and to produce sperm .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 750,
+    "elapsed_time": 2.746507167816162
+  },
+  {
+    "text": "Animated sequels and movie-length episodes of animated series are also often released in this fashion .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 695,
+    "elapsed_time": 2.2939682006835938
+  },
+  {
+    "text": "Details of the storylines can be found in the articles on each music drama .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 657,
+    "elapsed_time": 2.0131428241729736
+  },
+  {
+    "text": "In each group , teams played against each other home - and - away in a round-robin format .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 750,
+    "elapsed_time": 2.7527406215667725
+  },
+  {
+    "text": "Woven fabric is more elastic as well as more fluid in the bias direction , compared to the straight and cross grains .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 676,
+    "elapsed_time": 2.3224589824676514
+  },
+  {
+    "text": "In the late 19th century , baseball players started to wear the soft but long-lasting leather shoes .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 718,
+    "elapsed_time": 2.501481533050537
+  },
+  {
+    "text": "Some specific ministries / department are not allocated to anyone in the cabinet but the Prime Minister themself .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 620,
+    "elapsed_time": 1.7174444198608398
+  },
+  {
+    "text": "As of early 2017 , there are 131 species assigned to this genus , including the species listed below .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 700,
+    "elapsed_time": 2.257896661758423
+  },
+  {
+    "text": "This is a listing of the top ten point scorers in franchise history .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 632,
+    "elapsed_time": 1.9990754127502441
+  },
+  {
+    "text": "Flame ionization detectors are used most often for organic compounds .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 669,
+    "elapsed_time": 2.1244990825653076
+  },
+  {
+    "text": "In the times of ancient Greece and Rome , handkerchiefs were often used the way they are today .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 682,
+    "elapsed_time": 1.833458662033081
+  },
+  {
+    "text": "The lower part of the trap contains glands which absorb nutrients from captured prey .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 725,
+    "elapsed_time": 2.7589104175567627
+  },
+  {
+    "text": "Other sources use minima as low as 28 kn , and maxima as high as 90 kn .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 696,
+    "elapsed_time": 1.9088313579559326
+  },
+  {
+    "text": "Roads entering the City were narrowed and small chicanes were created to force drivers to slow down and be recorded by CCTV cameras .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 696,
+    "elapsed_time": 2.1807613372802734
+  },
+  {
+    "text": "Our professor stopped talking when he spotted a student sleeping in class .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 704,
+    "elapsed_time": 2.3886051177978516
+  },
+  {
+    "text": "Many types of ducks and geese share the same habitat , have overlapping or same hunting seasons , and are hunted the same .",
+    "true_label": "B2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 779,
+    "elapsed_time": 2.7950398921966553
+  },
+  {
+    "text": "She wanted to make a difference in the lives of the orphans .",
+    "true_label": "B2",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 614,
+    "elapsed_time": 1.7496674060821533
+  },
+  {
+    "text": "The steppe region had long been inhabited by nomads , and from the central steppes they could reach all areas of the Asian continent .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 699,
+    "elapsed_time": 2.498365640640259
+  },
+  {
+    "text": "Lifeline has more than 260 retail outlets around Australia that sell clothes and furniture to make enough money to pay for training and office space they use .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 708,
+    "elapsed_time": 2.6067683696746826
+  },
+  {
+    "text": "During this period many design houses began to hire artists to sketch or paint designs for garments .",
+    "true_label": "B2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 693,
+    "elapsed_time": 1.7534372806549072
+  },
+  {
+    "text": "One notable thing of Japanese mythology is that it explains the origin of the Imperial family , and assigned them divinity .",
+    "true_label": "C1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 746,
+    "elapsed_time": 2.830878496170044
+  },
+  {
+    "text": "All species of yew contain highly poisonous alkaloids known as taxanes .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 689,
+    "elapsed_time": 2.212900400161743
+  },
+  {
+    "text": "The dusty halo seen in images is sizeable , being around 2000 km in lengthwise extent .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 678,
+    "elapsed_time": 1.943586826324463
+  },
+  {
+    "text": "The effects of volcanic eruptions on recent winters are modest in scale , but historically have been significant .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 700,
+    "elapsed_time": 2.0756094455718994
+  },
+  {
+    "text": "Peat swamp forests are typically surrounded by lowland rain forests on better- drained soils , and by brackish or salt - water mangrove forests near the coast .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 698,
+    "elapsed_time": 2.5744407176971436
+  },
+  {
+    "text": "However , during the 20th century the river deteriorated due to pollution .",
+    "true_label": "C1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 647,
+    "elapsed_time": 2.7403969764709473
+  },
+  {
+    "text": "Many sans-serif typefaces use plainer oblique designs instead of italic ones .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 733,
+    "elapsed_time": 2.435084104537964
+  },
+  {
+    "text": "The disease was first reported in January 2007 in New York caves , although it was retrospectively detected in a photograph taken in early 2006 .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 643,
+    "elapsed_time": 1.678828239440918
+  },
+  {
+    "text": "If hypotheses may be drawn from knowledge of other deep-sea cephalopods , the vampire squid likely reproduces slowly by way of a small number of large eggs .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 774,
+    "elapsed_time": 2.227384328842163
+  },
+  {
+    "text": "At least two schools of researchers have proposed that dromaeosaurs may actually be descended from flying ancestors .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 638,
+    "elapsed_time": 2.2509000301361084
+  },
+  {
+    "text": "Leopoldo Alas remains a rather enigmatic figure in the Spanish literary world , leaving a legacy that encouraged the search for God and humanism simultaneously .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 670,
+    "elapsed_time": 1.947934627532959
+  },
+  {
+    "text": "Potassium fluoride is made by reacting potassium carbonate with hydrofluoric acid .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 706,
+    "elapsed_time": 2.2189748287200928
+  },
+  {
+    "text": "Gas chromatography is regularly used to describe what is inside a complex sample .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 644,
+    "elapsed_time": 1.786107063293457
+  },
+  {
+    "text": "When a woman starts to give birth , the amniotic sac should break and the amniotic fluid will leak out the woman 's vagina .",
+    "true_label": "C1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 710,
+    "elapsed_time": 2.7762465476989746
+  },
+  {
+    "text": "Disulfur decafluoride is a colorless gas or liquid with a SO - like odor .",
+    "true_label": "C1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 661,
+    "elapsed_time": 1.947700023651123
+  },
+  {
+    "text": "Hypereutrophic lakes are very nutrient - rich lakes with frequent large algal blooms and low transparency .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 633,
+    "elapsed_time": 2.3093299865722656
+  },
+  {
+    "text": "Male argonauts have been seen living inside salps , which are planktonic tunicates .",
+    "true_label": "C1",
+    "predicted_label": "C1",
+    "rationale": "",
+    "token_usage": 660,
+    "elapsed_time": 2.518364667892456
+  },
+  {
+    "text": "A cheese fondue mixture should be kept warm enough to keep the fondue smooth and liquid but not so hot that it burns .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 697,
+    "elapsed_time": 2.264925718307495
+  },
+  {
+    "text": "Most thinking in genetics has focused upon vertical transfer , but the importance of horizontal gene transfer among single -cell organisms is beginning to be acknowledged .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 667,
+    "elapsed_time": 1.745321273803711
+  },
+  {
+    "text": "There are three different types of sections , the parabola , the hyperbola and the ellipse .",
+    "true_label": "C1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 648,
+    "elapsed_time": 1.9721198081970215
+  },
+  {
+    "text": "Most Old World Warblers are of generally unseparate appearances .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 702,
+    "elapsed_time": 2.482876777648926
+  },
+  {
+    "text": "Most stingrays feed primarily on mollusks , crustaceans , and occasionally on small fish .",
+    "true_label": "C1",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 668,
+    "elapsed_time": 2.038278579711914
+  },
+  {
+    "text": "The estuaries and tidal flats are home to an array of plants and animals adapted to living in the oxygen - deficient saline mud .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 695,
+    "elapsed_time": 2.7546114921569824
+  },
+  {
+    "text": "The glenoid labrum is the second kind of cartilage in the shoulder which is distinctly different from the articular cartilage .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 701,
+    "elapsed_time": 2.519998550415039
+  },
+  {
+    "text": "With their long velar filaments deployed , vampire squids have been observed drifting along in the deep , black ocean currents .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 673,
+    "elapsed_time": 2.25164532661438
+  },
+  {
+    "text": "Surface integrals have applications in physics , particularly with the theories of classical electromagnetism .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 688,
+    "elapsed_time": 2.5157630443573
+  },
+  {
+    "text": "The apical complex includes vesicles called rhoptries and micronemes , which open at the anterior of the cell .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 709,
+    "elapsed_time": 2.268705368041992
+  },
+  {
+    "text": "The ladder analogy arises because no one technique can measure distances at all ranges encountered in astronomy .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 654,
+    "elapsed_time": 2.014735698699951
+  },
+  {
+    "text": "The first significant written record of Britain and its inhabitants was made by the Greek navigator Pytheas , who explored the coastal region of Britain around 325 BC .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 690,
+    "elapsed_time": 1.7490577697753906
+  },
+  {
+    "text": "Males and females look pretty similar except during the breeding season , when the most conspicuous difference is a swollen gland around the male 's vent .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 681,
+    "elapsed_time": 2.0204641819000244
+  },
+  {
+    "text": "Gregorian chant was traditionally sung by choirs of men and boys in churches , or by men and women of religious orders in their chapels .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 747,
+    "elapsed_time": 2.4984285831451416
+  },
+  {
+    "text": "The conversion from hexadecimal to binary is equally direct .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 674,
+    "elapsed_time": 2.250380039215088
+  },
+  {
+    "text": "The Master has also been featured in spin-offs of the series , which are of unclear canonicity and may not take place in the same continuity .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 663,
+    "elapsed_time": 2.2586865425109863
+  },
+  {
+    "text": "There are several causes of pernicious anemia .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 701,
+    "elapsed_time": 2.289508581161499
+  },
+  {
+    "text": "The authority of appellate courts to review the decisions of lower courts varies widely from one jurisdiction to another .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 662,
+    "elapsed_time": 1.9903581142425537
+  },
+  {
+    "text": "The dermatologist diagnosed skin cancer .",
+    "true_label": "C1",
+    "predicted_label": "A2",
+    "rationale": "",
+    "token_usage": 586,
+    "elapsed_time": 1.2525043487548828
+  },
+  {
+    "text": "Insect galls are usually induced by chemicals injected by the larvae or the adults of the insects into the plants , and possibly by mechanical damage .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 671,
+    "elapsed_time": 2.0037262439727783
+  },
+  {
+    "text": "The sulfuric acid is regenerated and recycled to the leaching step .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 647,
+    "elapsed_time": 1.9812238216400146
+  },
+  {
+    "text": "Non-financial capital accumulation is an essential factor for economic growth , since additional investment is essential to enlarge the scale of production and increase employment opportunities .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 678,
+    "elapsed_time": 1.9361045360565186
+  },
+  {
+    "text": "Mab is heavily perturbed , meaning its movement is not only caused by the gravity of another large thing .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 673,
+    "elapsed_time": 1.7267725467681885
+  },
+  {
+    "text": "In Australia , stillbirth is defined as a baby born with no signs of life that weighs more than 400 grams , or more than 20 weeks in gestation .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 680,
+    "elapsed_time": 2.0090343952178955
+  },
+  {
+    "text": "Cerebellar ataxia is ataxia that is caused by a problem with a person 's cerebellum .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 646,
+    "elapsed_time": 1.5432894229888916
+  },
+  {
+    "text": "African wildcats are generally crepuscular , hunting at dawn and dusk .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 796,
+    "elapsed_time": 3.2934346199035645
+  },
+  {
+    "text": "Sexual reproduction is a process specific to eukaryotes , organisms whose cells contain a nucleus and mitochondria .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 705,
+    "elapsed_time": 2.2725794315338135
+  },
+  {
+    "text": "Despite their extreme luminosity , many of these stars are too distant to be observed with the naked eye .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 704,
+    "elapsed_time": 2.0584876537323
+  },
+  {
+    "text": "This is useful in the definition of degenerate conics , which require considering the cylindrical conics .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 709,
+    "elapsed_time": 2.2165122032165527
+  },
+  {
+    "text": "An incremental backup only copies the data that has changed since the last incremental backup .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 656,
+    "elapsed_time": 2.2407617568969727
+  },
+  {
+    "text": "s of 2019 these are the only known Fermat primes , and conjecturally the only Fermat primes .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 685,
+    "elapsed_time": 1.9946088790893555
+  },
+  {
+    "text": "Pollinators are often visually attracted by the shape and colors of the labellum .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 729,
+    "elapsed_time": 2.243496894836426
+  },
+  {
+    "text": "A bailiwick is a territory governed by a bailiff .",
+    "true_label": "C1",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 714,
+    "elapsed_time": 2.09720778465271
+  },
+  {
+    "text": "These enzymes are found in bacteria and archaea and defend them against invading viruses , which are bacteriophages .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 670,
+    "elapsed_time": 1.9974908828735352
+  },
+  {
+    "text": "Another bee-inspired stigmergic computational technique called bee colony optimization is employed in Internet Server Optimization .",
+    "true_label": "C2",
+    "predicted_label": "C1",
+    "rationale": "",
+    "token_usage": 720,
+    "elapsed_time": 2.6845703125
+  },
+  {
+    "text": "It can be made by reacting ammonium nitrate with potassium hydroxide .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 695,
+    "elapsed_time": 2.013990640640259
+  },
+  {
+    "text": "Cetaceans and artiodactyls now are classified under the order Cetartiodactyla , often still referred to as Artiodactyla , which includes both whales and hippopotamuses .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 749,
+    "elapsed_time": 2.397775888442993
+  },
+  {
+    "text": "Three types of flagella have so far been distinguished ; bacterial , archaeal and eukaryotic .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 685,
+    "elapsed_time": 2.268550395965576
+  },
+  {
+    "text": "An often studied electrocyclic reaction is the conrotatory thermal ring-opening of benzocyclobutene .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 692,
+    "elapsed_time": 2.257030487060547
+  },
+  {
+    "text": "Before a baby is born , the epithelium and underlying mesenchy ma interact to form hair follicles .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 704,
+    "elapsed_time": 1.7661879062652588
+  },
+  {
+    "text": "It is made by reacting sodium carbonate with silver nitrate .",
+    "true_label": "C2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 621,
+    "elapsed_time": 2.2963509559631348
+  },
+  {
+    "text": "Corroboree frogs are the first vertebrates discovered that are able to produce their own poisonous alkaloids , as opposed to obtaining it via diet as many other frogs do .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 708,
+    "elapsed_time": 2.234356164932251
+  },
+  {
+    "text": "Saliva contains the enzyme amylase , which hydrolyses starch into maltose and dextrin .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 702,
+    "elapsed_time": 2.571680784225464
+  },
+  {
+    "text": "When the embryonic prosencephalon fails to divide the brain into two lobes , it results in a condition known as holoprosencephaly .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 788,
+    "elapsed_time": 2.2057619094848633
+  },
+  {
+    "text": "The related term homodesmotic reaction also takes into account orbital hybridization and in addition there is no change in the number of carbon to hydrogen bonds .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 753,
+    "elapsed_time": 2.7162795066833496
+  },
+  {
+    "text": "The skin is covered in chromatophores , which enable the squid to change color to suit its surroundings , making it effectively camouflaged .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 661,
+    "elapsed_time": 1.5741608142852783
+  },
+  {
+    "text": "Potassium chromate is a carcinogen and strong oxidant .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 676,
+    "elapsed_time": 2.0069196224212646
+  },
+  {
+    "text": "Hummingbirds are specialized nectarivores and are tied to the ornithophilous flowers upon which they feed .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 641,
+    "elapsed_time": 2.1914360523223877
+  },
+  {
+    "text": "In the natural sciences , gradualism is the theory which holds that profound change is the cumulative product of slow but continuous processes , often contrasted with catastrophism .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 712,
+    "elapsed_time": 2.2059996128082275
+  },
+  {
+    "text": "Barium bromide can be prepared from barium sulfide or barium carbonate via reaction with hydrobromic acid to give hydrated barium bromide .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 717,
+    "elapsed_time": 2.292729377746582
+  },
+  {
+    "text": "The hypothalamus releases factors down the pituitary stalk to the pituitary gland where they cause the release of pituitary hormones .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 665,
+    "elapsed_time": 2.2924554347991943
+  },
+  {
+    "text": "The piezoelectric effect is generally stronger in materials that also exhibit pyroelectricity , and all pyroelectric materials are also piezoelectric .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 717,
+    "elapsed_time": 2.4947471618652344
+  },
+  {
+    "text": "RNA viruses generally have very high mutation rates compared to DNA viruses , because viral RNA polymerases lack the proofreading ability of DNA polymerases .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 695,
+    "elapsed_time": 2.2331082820892334
+  },
+  {
+    "text": "Most hormones initiate a cellular response by initially binding to either cell membrane associated or intracellular receptors .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 727,
+    "elapsed_time": 2.315042018890381
+  },
+  {
+    "text": "The prominent scarring on Seal 's face is the result of a type of lupus called discoid lupus erythematosus , which affects the skin and leaves large scars .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 730,
+    "elapsed_time": 2.5130889415740967
+  },
+  {
+    "text": "Serum is an important part of the self-renewal of embryonic stem cells when combined with the cytokine leukemia inhibitory factor .",
+    "true_label": "C2",
+    "predicted_label": "C1",
+    "rationale": "",
+    "token_usage": 659,
+    "elapsed_time": 2.0121536254882812
+  },
+  {
+    "text": "The major advantage of conventional hydroelectric dams with reservoirs is their ability to store water at low cost for dispatch later as high value clean electricity .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 719,
+    "elapsed_time": 2.2619338035583496
+  },
+  {
+    "text": "Obligate anaerobes may use fermentation or anaerobic respiration .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 654,
+    "elapsed_time": 1.938115119934082
+  },
+  {
+    "text": "Within the modern synthesis of the early 20th century , macroevolution is thought of as the compounded effects of microevolution .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 660,
+    "elapsed_time": 2.301988363265991
+  },
+  {
+    "text": "Frequency - dependent selection occurs when the fitness of a phenotype is dependent on its frequency relative to other phenotypes in a given population .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 659,
+    "elapsed_time": 2.491598606109619
+  },
+  {
+    "text": "Differential cryptanalysis attacks are usually chosen plaintext attacks , meaning that the attacker must be able to obtain encrypted ciphertexts for some set of plaintexts of his choosing .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 729,
+    "elapsed_time": 2.7296667098999023
+  },
+  {
+    "text": "Fibroblasts are similar to cellular automata , as each fibroblast only interacts with its neighbors .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 639,
+    "elapsed_time": 1.9698820114135742
+  },
+  {
+    "text": "Both cetaceans and artiodactyl are now classified under the super-order Cetartiodactyla , which includes both whales and hippopotamuses .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 681,
+    "elapsed_time": 2.5192644596099854
+  },
+  {
+    "text": "Mycorrhizal plants are often more resistant to diseases , such as those caused by microbial soil- borne pathogens .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 699,
+    "elapsed_time": 2.508960485458374
+  },
+  {
+    "text": "Glaucocystophytic algae contain muroplasts , which are similar to chloroplasts except that they have a cell wall , similar to that of prokaryotes .",
+    "true_label": "C2",
+    "predicted_label": "C1",
+    "rationale": "",
+    "token_usage": 644,
+    "elapsed_time": 2.110186815261841
+  },
+  {
+    "text": "However , palaeotempestological research allows reconstruction of pre-historic hurricane activity trends on timescales of centuries to millennia .",
+    "true_label": "C2",
+    "predicted_label": "C1",
+    "rationale": "",
+    "token_usage": 864,
+    "elapsed_time": 3.788071870803833
+  },
+  {
+    "text": "Another example is in the proposed biosynthesis of aranotin , a naturally occurring oxepine , and its related compounds .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 735,
+    "elapsed_time": 2.6836345195770264
+  },
+  {
+    "text": "Corticosteroids , such as dexamethasone and budesonide , have been shown to improve outcomes in children with all severities of croup .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 680,
+    "elapsed_time": 1.893228530883789
+  },
+  {
+    "text": "Although most of a cell 's DNA is contained in the cell nucleus , the mitochondrion has its own independent genome that shows substantial similarity to bacterial genomes .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 748,
+    "elapsed_time": 2.5108320713043213
+  },
+  {
+    "text": "Gum arabic is a complex mixture of glycoproteins and polysaccharides predominantly consisting of arabinose and galactose .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 719,
+    "elapsed_time": 2.0375678539276123
+  },
+  {
+    "text": "Siboglinid tube worms , which may grow to over 2 m tall in the largest species , often form an important part of the community around a hydrothermal vent .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 693,
+    "elapsed_time": 1.7073047161102295
+  },
+  {
+    "text": "Unlike lepidosaurian reptiles , pelycosaurs lacked reptilian epidermal scales .",
+    "true_label": "C2",
+    "predicted_label": "C1",
+    "rationale": "",
+    "token_usage": 728,
+    "elapsed_time": 2.730133056640625
+  },
+  {
+    "text": "It is prepared by the reaction of hydrogen peroxide and lithium hydroxide .",
+    "true_label": "C2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 660,
+    "elapsed_time": 1.997708797454834
+  },
+  {
+    "text": "Dimethylmercury is extremely toxic and dangerous to handle .",
+    "true_label": "C2",
+    "predicted_label": "B1",
+    "rationale": "",
+    "token_usage": 682,
+    "elapsed_time": 2.316145658493042
+  },
+  {
+    "text": "An example of an electrocyclic reaction is the conrotatory thermal ring-opening of benzocyclobutane .",
+    "true_label": "C2",
+    "predicted_label": "C1",
+    "rationale": "",
+    "token_usage": 754,
+    "elapsed_time": 3.264815330505371
+  },
+  {
+    "text": "Shiprock is composed of fractured volcanic breccia and black dikes of igneous rock called minette , or lamprophyre .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 682,
+    "elapsed_time": 2.816685676574707
+  },
+  {
+    "text": "Sodium bicarbonate may be used to neutralize liquid spills of phosgene .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 744,
+    "elapsed_time": 2.4827051162719727
+  },
+  {
+    "text": "Organometallic compounds may be found in the environment .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 624,
+    "elapsed_time": 1.7875068187713623
+  },
+  {
+    "text": "Photolysis is part of the light- dependent reactions of photosynthesis .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 640,
+    "elapsed_time": 2.0080325603485107
+  },
+  {
+    "text": "Antipsychotic medicines , such as haloperidol , are sometimes used along with benzodiazepines to control agitation or psychosis .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 668,
+    "elapsed_time": 2.000471591949463
+  },
+  {
+    "text": "However , recent research has shown that at least some prokaryotes have microcompartments such as carboxysomes .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 715,
+    "elapsed_time": 2.8002824783325195
+  },
+  {
+    "text": "The posterior pituitary is actually an extension of the hypothalamus .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 660,
+    "elapsed_time": 2.01078200340271
+  },
+  {
+    "text": "Haematoxylin and eosin staining is frequently used in histology to examine thin tissue sections .",
+    "true_label": "C2",
+    "predicted_label": "B2",
+    "rationale": "",
+    "token_usage": 707,
+    "elapsed_time": 1.8130061626434326
+  }
+]

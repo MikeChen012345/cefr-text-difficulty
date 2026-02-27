@@ -10,7 +10,6 @@ from config import DATA_PATH, CEFR_TO_INT, SEED, N_FOLDS
 
 def load_data():
     """Load CEFR-SP dataset and return DataFrame with numeric labels."""
-    print("=" * 50)
     if not os.path.exists(DATA_PATH): # download from Hugging Face if local file not found
         dataset = load_dataset("UniversalCEFR/cefr_sp_en")
         # Save each split to CSV

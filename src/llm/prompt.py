@@ -1,5 +1,8 @@
+from functools import lru_cache
+import random
+
 SYSTEM_PROMPT_TEMPLATE = "You are a professional linguist specializing in language proficiency assessment. " + \
-"Your task is to evaluate the CEFR level of a given text passage and provide a rationale for your assessment. The CEFR levels are as follows:" + \
+"Your task is to evaluate the CEFR level of a given text passage. The CEFR levels are as follows:" + \
 """
 A1 (Beginner): Can understand and use familiar everyday expressions and very basic phrases.
 A2 (Elementary): Can understand sentences and frequently used expressions related to areas of most immediate relevance.
@@ -16,6 +19,13 @@ When evaluating the CEFR level, consider the following factors:
 """
 
 INSTRUCTION = """
+Based on the above criteria, read the provided text passage and determine its CEFR level. Provide a single CEFR level (A1, A2, B1, B2, C1, or C2) as your final answer following the delimiter "#### ". 
+For example:
+### A1
+"""
+
+INSTRUCTION_COT = """
+Based on the above criteria, read the provided text passage and determine its CEFR level. Please provide a step-by-step rationale for your CEFR level assessment, breaking down your evaluation into several components.
 Always provide your CEFR level assessment following a rationale explaining your assessment. Do not embed the final CEFR level within the rationale. Instead, clearly separate the rationale and the final answer using the delimiter "#### ".
 Format your response as follows:
 <your rationale>#### <your CEFR level>
@@ -24,13 +34,26 @@ For example:
 The text demonstrates a limited range of vocabulary and simple sentence structures, which are characteristic of a beginner level. The ideas are not well connected, and there are frequent grammatical errors. #### A1
 """
 
-COT = "\n\nPlease provide a step-by-step rationale for your CEFR level assessment, breaking down your evaluation into several components."
-
-
-
 SYSTEM_PROMPT_BASE = SYSTEM_PROMPT_TEMPLATE + INSTRUCTION
 
-SYSTEM_PROMPT_COT = SYSTEM_PROMPT_BASE + COT + INSTRUCTION
+SYSTEM_PROMPT_COT = SYSTEM_PROMPT_BASE + INSTRUCTION_COT
+
+@lru_cache(maxsize=1)
+def _get_train_records() -> tuple[dict, ...]:
+    """Load and cache training records for few-shot prompt construction.
+
+    Cached in-memory because the dataset is small and the few-shot prompt builder is called
+    for every sample when `few_shots > 0`.
+    """
+    import sys
+
+    sys.path.append("..")
+    from data_loader import load_data_split
+
+    train_df, _ = load_data_split()
+    # Tuple is immutable/hash-stable for caching; contains dicts (records).
+    return tuple(train_df.to_dict(orient="records"))
+
 
 def system_prompt_few_shots(n: int = 1, cot: bool = False) -> str:
     """
@@ -44,17 +67,13 @@ def system_prompt_few_shots(n: int = 1, cot: bool = False) -> str:
     Returns:
         A string containing the complete system prompt with n examples appended.
     """
-    import numpy as np
-    import sys
-    sys.path.append("..")
-    from data_loader import load_data_split
-    train_df, _ = load_data_split()
-    examples = np.random.choice(train_df.to_dict(orient="records"), size=min(n, len(train_df)), replace=False)
+    train_records = _get_train_records()
+    examples = random.sample(list(train_records), k=min(n, len(train_records)))
     example_strs = []
     for example in examples:
         example_strs.append(f"\nText:\n{example['text']}\nResponse: <skipping rationale>#### {example['cefr_level']}")
     return SYSTEM_PROMPT_TEMPLATE + "\n\nHere are some examples of CEFR level assessments:\n" + \
-        "\n".join(example_strs) + (COT if cot else "") + INSTRUCTION
+        "\n".join(example_strs) + (INSTRUCTION_COT if cot else INSTRUCTION)
 
 
 
