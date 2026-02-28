@@ -3,7 +3,7 @@
 Runs all experiments:
 1. Feature extraction and EDA
 2. Interpretable classifier training with ablation
-3. BERT fine-tuning
+3. Neural model training (BERT + DAN)
 4. Diagnostic experiments (probing, error analysis)
 """
 import os
@@ -23,7 +23,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (
     f1_score, accuracy_score, classification_report,
@@ -31,6 +33,7 @@ from sklearn.metrics import (
 )
 import xgboost as xgb
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from transformers import (
     BertTokenizer, BertForSequenceClassification,
@@ -326,6 +329,79 @@ def run_interpretable_models(features_df, labels, splits, feature_groups):
     return all_results, ablation_results, imp_df
 
 
+def run_tfidf_linear_svm(df, splits):
+    log("\n" + "="*60)
+    log("EXPERIMENT 2b: TF-IDF + Linear SVM")
+    log("="*60)
+
+    texts = df["text"].tolist()
+    y = df["label"].values
+    fold_results = []
+
+    for fold_i, (train_idx, test_idx) in enumerate(splits):
+        t0 = time.time()
+        train_texts = [texts[i] for i in train_idx]
+        test_texts = [texts[i] for i in test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        vectorizer = TfidfVectorizer(
+            lowercase=True,
+            strip_accents="unicode",
+            ngram_range=(1, TFIDF_NGRAM_MAX),
+            min_df=TFIDF_MIN_DF,
+            max_features=TFIDF_MAX_FEATURES,
+            sublinear_tf=True,
+        )
+        X_train = vectorizer.fit_transform(train_texts)
+        X_test = vectorizer.transform(test_texts)
+
+        model = LinearSVC(C=SVM_C, class_weight="balanced", random_state=SEED)
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+
+        fold_results.append({
+            "macro_f1": f1_score(y_test, y_pred, average="macro"),
+            "accuracy": accuracy_score(y_test, y_pred),
+            "per_class_f1": f1_score(y_test, y_pred, average=None, labels=list(range(6))),
+            "y_pred": y_pred,
+            "y_true": y_test,
+            "confusion_matrix": confusion_matrix(y_test, y_pred, labels=list(range(6))),
+            "adjacent_acc": float(np.mean(np.abs(y_test - y_pred) <= 1)),
+            "kappa": cohen_kappa_score(y_test, y_pred, weights="quadratic"),
+            "vocab_size": int(X_train.shape[1]),
+        })
+        log(f"  Fold {fold_i+1}/{N_FOLDS}: F1={fold_results[-1]['macro_f1']:.4f}, "
+            f"Acc={fold_results[-1]['accuracy']:.4f}, Vocab={X_train.shape[1]} "
+            f"[{time.time()-t0:.1f}s]")
+
+    mean_f1 = np.mean([r["macro_f1"] for r in fold_results])
+    std_f1 = np.std([r["macro_f1"] for r in fold_results])
+    mean_acc = np.mean([r["accuracy"] for r in fold_results])
+    std_acc = np.std([r["accuracy"] for r in fold_results])
+    mean_adj = np.mean([r["adjacent_acc"] for r in fold_results])
+    mean_kappa = np.mean([r["kappa"] for r in fold_results])
+    mean_vocab = np.mean([r["vocab_size"] for r in fold_results])
+
+    results = {
+        "macro_f1": f"{mean_f1:.4f} +/- {std_f1:.4f}",
+        "accuracy": f"{mean_acc:.4f} +/- {std_acc:.4f}",
+        "adjacent_acc": f"{mean_adj:.4f}",
+        "kappa": f"{mean_kappa:.4f}",
+        "macro_f1_mean": mean_f1,
+        "macro_f1_std": std_f1,
+        "accuracy_mean": mean_acc,
+        "avg_vocab_size": float(mean_vocab),
+        "fold_results": fold_results,
+    }
+
+    per_class_f1 = np.mean([r["per_class_f1"] for r in fold_results], axis=0)
+    results["per_class_f1_avg"] = {CEFR_LEVELS[i]: float(per_class_f1[i]) for i in range(6)}
+
+    log(f"TF-IDF + LinearSVM Final: F1={mean_f1:.4f}+/-{std_f1:.4f}, "
+        f"Acc={mean_acc:.4f}+/-{std_acc:.4f}")
+    return results
+
+
 # ══════════════════════════════════════════════════════════════════════
 # EXPERIMENT 3: BERT Fine-tuning
 # ══════════════════════════════════════════════════════════════════════
@@ -345,6 +421,57 @@ class CEFRDataset(Dataset):
             "attention_mask": self.encodings["attention_mask"][idx],
             "labels": self.labels[idx],
         }
+
+
+class DANTextDataset(Dataset):
+    def __init__(self, input_ids, attention_masks, labels):
+        self.input_ids = torch.tensor(input_ids, dtype=torch.long)
+        self.attention_masks = torch.tensor(attention_masks, dtype=torch.long)
+        self.labels = torch.tensor(labels, dtype=torch.long)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return {
+            "input_ids": self.input_ids[idx],
+            "attention_mask": self.attention_masks[idx],
+            "labels": self.labels[idx],
+        }
+
+
+class DANClassifier(nn.Module):
+    def __init__(self, vocab_size, pretrained_embeddings=None):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, DAN_EMBED_DIM, padding_idx=0)
+        if pretrained_embeddings is not None:
+            self.embedding.weight.data.copy_(pretrained_embeddings)
+        self.classifier = nn.Sequential(
+            nn.Linear(DAN_EMBED_DIM, DAN_HIDDEN_DIM),
+            nn.ReLU(),
+            nn.Dropout(DAN_DROPOUT),
+            nn.Linear(DAN_HIDDEN_DIM, 6),
+        )
+
+    def forward(self, input_ids, attention_mask):
+        x = self.embedding(input_ids)  # [B, T, D]
+        mask = attention_mask.unsqueeze(-1).float()
+        summed = (x * mask).sum(dim=1)
+        counts = mask.sum(dim=1).clamp(min=1.0)
+        avg = summed / counts
+        return self.classifier(avg)
+
+
+def encode_texts_with_tokenizer(texts, tokenizer, max_len=DAN_MAX_LEN):
+    encodings = tokenizer(
+        texts,
+        truncation=True,
+        padding="max_length",
+        max_length=max_len,
+        add_special_tokens=False,
+        return_tensors="pt",
+    )
+    return encodings["input_ids"], encodings["attention_mask"]
 
 
 def train_bert_fold(texts, labels, train_idx, test_idx, fold_i):
@@ -433,7 +560,7 @@ def train_bert_fold(texts, labels, train_idx, test_idx, fold_i):
 
 def run_bert(df, splits):
     log("\n" + "="*60)
-    log("EXPERIMENT 3: BERT Fine-tuning")
+    log("EXPERIMENT 3a: BERT Fine-tuning")
     log("="*60)
 
     texts = df["text"].tolist()
@@ -479,6 +606,156 @@ def run_bert(df, splits):
         logits_array[idx] = logit
 
     return bert_results, logits_array
+
+
+def train_dan_fold(texts, labels, train_idx, test_idx, fold_i, tokenizer, pretrained_embeddings=None):
+    device = torch.device(DEVICE if torch.cuda.is_available() else "cpu")
+
+    train_texts = [texts[i] for i in train_idx]
+    test_texts = [texts[i] for i in test_idx]
+    train_labels = labels[train_idx].tolist()
+    test_labels = labels[test_idx].tolist()
+
+    train_ids, train_masks = encode_texts_with_tokenizer(train_texts, tokenizer)
+    test_ids, test_masks = encode_texts_with_tokenizer(test_texts, tokenizer)
+
+    train_ds = DANTextDataset(train_ids, train_masks, train_labels)
+    test_ds = DANTextDataset(test_ids, test_masks, test_labels)
+
+    train_loader = DataLoader(train_ds, batch_size=DAN_BATCH_SIZE, shuffle=True)
+    test_loader = DataLoader(test_ds, batch_size=DAN_BATCH_SIZE)
+
+    model = DANClassifier(tokenizer.vocab_size, pretrained_embeddings=pretrained_embeddings).to(device)
+
+    if DAN_USE_CLASS_WEIGHTS:
+        class_counts = np.bincount(np.array(train_labels), minlength=6)
+        class_weights = len(train_labels) / (6 * np.maximum(class_counts, 1))
+        class_weights = torch.tensor(class_weights, dtype=torch.float32, device=device)
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
+    else:
+        criterion = nn.CrossEntropyLoss()
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=DAN_LR, weight_decay=DAN_WEIGHT_DECAY)
+
+    best_f1 = 0.0
+    best_preds = None
+    best_epoch = 0
+    epochs_no_improve = 0
+
+    for epoch in range(DAN_EPOCHS):
+        model.train()
+        total_loss = 0.0
+        for batch in train_loader:
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            y_batch = batch["labels"].to(device)
+
+            logits = model(input_ids, attention_mask)
+            loss = criterion(logits, y_batch)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            optimizer.zero_grad()
+            total_loss += loss.item()
+
+        model.eval()
+        all_preds = []
+        with torch.no_grad():
+            for batch in test_loader:
+                input_ids = batch["input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
+                logits = model(input_ids, attention_mask)
+                preds = torch.argmax(logits, dim=-1)
+                all_preds.extend(preds.cpu().numpy())
+
+        all_preds = np.array(all_preds)
+        f1 = f1_score(test_labels, all_preds, average="macro")
+        acc = accuracy_score(test_labels, all_preds)
+        log(f"  Fold {fold_i} Epoch {epoch+1}: loss={total_loss/len(train_loader):.4f}, F1={f1:.4f}, Acc={acc:.4f}")
+
+        if f1 > best_f1:
+            best_f1 = f1
+            best_preds = all_preds.copy()
+            best_epoch = epoch + 1
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+
+        if epochs_no_improve >= DAN_PATIENCE:
+            log(f"  Fold {fold_i} early stop at epoch {epoch+1} (best epoch={best_epoch}, best F1={best_f1:.4f})")
+            break
+
+    y_test = np.array(test_labels)
+    del model
+    torch.cuda.empty_cache()
+
+    return {
+        "macro_f1": best_f1,
+        "accuracy": accuracy_score(y_test, best_preds),
+        "per_class_f1": f1_score(y_test, best_preds, average=None, labels=list(range(6))),
+        "y_pred": best_preds,
+        "y_true": y_test,
+        "confusion_matrix": confusion_matrix(y_test, best_preds, labels=list(range(6))),
+        "adjacent_acc": float(np.mean(np.abs(y_test - best_preds) <= 1)),
+        "kappa": cohen_kappa_score(y_test, best_preds, weights="quadratic"),
+        "vocab_size": tokenizer.vocab_size,
+        "best_epoch": best_epoch,
+    }
+
+
+def run_dan(df, splits):
+    log("\n" + "="*60)
+    log("EXPERIMENT 3b: DAN")
+    log("="*60)
+
+    texts = df["text"].tolist()
+    labels = df["label"].values
+    tokenizer = BertTokenizer.from_pretrained(BERT_MODEL_NAME)
+    pretrained_embeddings = None
+    if DAN_INIT_FROM_BERT:
+        log("Initializing DAN embeddings from bert-base-uncased...")
+        base_model = BertForSequenceClassification.from_pretrained(BERT_MODEL_NAME, num_labels=6)
+        pretrained_embeddings = base_model.bert.embeddings.word_embeddings.weight.detach().clone()
+        del base_model
+
+    fold_results = []
+    for fold_i, (train_idx, test_idx) in enumerate(splits):
+        log(f"\n--- Fold {fold_i+1}/{N_FOLDS} ---")
+        t0 = time.time()
+        result = train_dan_fold(
+            texts, labels, train_idx, test_idx, fold_i,
+            tokenizer=tokenizer,
+            pretrained_embeddings=pretrained_embeddings,
+        )
+        fold_results.append(result)
+        log(f"  Fold {fold_i+1} done: F1={result['macro_f1']:.4f} [{time.time()-t0:.0f}s]")
+
+    mean_f1 = np.mean([r["macro_f1"] for r in fold_results])
+    std_f1 = np.std([r["macro_f1"] for r in fold_results])
+    mean_acc = np.mean([r["accuracy"] for r in fold_results])
+    std_acc = np.std([r["accuracy"] for r in fold_results])
+    mean_adj = np.mean([r["adjacent_acc"] for r in fold_results])
+    mean_kappa = np.mean([r["kappa"] for r in fold_results])
+    mean_vocab = np.mean([r["vocab_size"] for r in fold_results])
+
+    log(f"\nDAN Final: F1={mean_f1:.4f}+/-{std_f1:.4f}, Acc={mean_acc:.4f}+/-{std_acc:.4f}")
+
+    dan_results = {
+        "macro_f1": f"{mean_f1:.4f} +/- {std_f1:.4f}",
+        "accuracy": f"{mean_acc:.4f} +/- {std_acc:.4f}",
+        "adjacent_acc": f"{mean_adj:.4f}",
+        "kappa": f"{mean_kappa:.4f}",
+        "macro_f1_mean": mean_f1,
+        "macro_f1_std": std_f1,
+        "accuracy_mean": mean_acc,
+        "avg_vocab_size": float(mean_vocab),
+        "fold_results": fold_results,
+    }
+
+    per_class_f1 = np.mean([r["per_class_f1"] for r in fold_results], axis=0)
+    dan_results["per_class_f1_avg"] = {CEFR_LEVELS[i]: float(per_class_f1[i]) for i in range(6)}
+
+    return dan_results
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -711,9 +988,11 @@ def main():
     feature_results, ablation_results, imp_df = run_interpretable_models(
         features_df, df["label"], splits, feature_groups
     )
+    tfidf_svm_results = run_tfidf_linear_svm(df, splits)
 
-    # Experiment 3: BERT
+    # Experiment 3: Neural models
     bert_results, bert_logits = run_bert(df, splits)
+    dan_results = run_dan(df, splits)
 
     # Experiment 4: Diagnostics
     diagnostic_results = run_diagnostics(
@@ -747,7 +1026,9 @@ def main():
             "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU",
         },
         "feature_models": clean_for_json(feature_results),
+        "tfidf_linear_svm": clean_for_json(tfidf_svm_results),
         "bert": clean_for_json(bert_results),
+        "dan": clean_for_json(dan_results),
         "ablation": clean_for_json(ablation_results),
         "diagnostics": clean_for_json(diagnostic_results),
     }
@@ -768,8 +1049,12 @@ def main():
             acc_str = r.get("accuracy", "N/A")
             adj_str = r.get("adjacent_acc", "N/A")
             log(f"{model_name:<25} {f1_str:<22} {acc_str:<22} {adj_str:<12}")
+    r = tfidf_svm_results
+    log(f"{'TFIDF_LinearSVM':<25} {r['macro_f1']:<22} {r['accuracy']:<22} {r['adjacent_acc']:<12}")
     r = bert_results
     log(f"{'BERT':<25} {r['macro_f1']:<22} {r['accuracy']:<22} {r['adjacent_acc']:<12}")
+    r = dan_results
+    log(f"{'DAN':<25} {r['macro_f1']:<22} {r['accuracy']:<22} {r['adjacent_acc']:<12}")
 
     log(f"\nProbing R2 (features -> BERT): {diagnostic_results['probing_r2']}")
     log(f"Total time: {elapsed/60:.1f} minutes")
@@ -783,12 +1068,18 @@ def main():
             model_names.append(name.replace("Full_", ""))
             f1_means.append(feature_results[name]["macro_f1_mean"])
             f1_stds.append(feature_results[name]["macro_f1_std"])
+    model_names.append("TFIDF+SVM")
+    f1_means.append(tfidf_svm_results["macro_f1_mean"])
+    f1_stds.append(tfidf_svm_results["macro_f1_std"])
     model_names.append("BERT")
     f1_means.append(bert_results["macro_f1_mean"])
     f1_stds.append(bert_results["macro_f1_std"])
+    model_names.append("DAN")
+    f1_means.append(dan_results["macro_f1_mean"])
+    f1_stds.append(dan_results["macro_f1_std"])
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    colors = ["#3498db", "#2ecc71", "#f39c12", "#e74c3c"]
+    colors = ["#3498db", "#2ecc71", "#f39c12", "#34495e", "#e74c3c", "#9b59b6"]
     bars = ax.bar(model_names, f1_means, yerr=f1_stds, capsize=5,
                   color=colors[:len(model_names)], edgecolor="black", linewidth=0.5)
     ax.set_ylabel("Macro F1 Score")
