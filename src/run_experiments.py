@@ -203,6 +203,130 @@ def summarize_folds(fold_results):
     }
 
 
+def load_cached_features_for_dataset(dataset_key: str) -> pd.DataFrame:
+    """Load cached feature matrix for dataset_key from results/<dataset_key>/features.csv."""
+    feat_path = os.path.join(results_dir(dataset_key), "features.csv")
+    if not os.path.exists(feat_path):
+        raise FileNotFoundError(
+            f"Missing {feat_path}. Run: python src/feature_extraction.py --dataset {dataset_key}"
+        )
+    df = pd.read_csv(feat_path)
+    df = df.replace([np.inf, -np.inf], np.nan).fillna(0)
+    return df
+
+
+def run_cross_task_features(train_key: str, test_key: str, model_names=("XGBoost", "RandomForest", "LogReg")):
+    """
+    Cross-task evaluation: train on one dataset, test on the other.
+    Uses cached 34-feature matrices under results/<dataset_key>/features.csv.
+    """
+    log("\n" + "="*60)
+    log(f"CROSS-TASK (FEATURE MODELS): {train_key} -> {test_key}")
+    log("="*60)
+
+    # Load data
+    train_df = load_data(dataset_key=train_key)
+    test_df = load_data(dataset_key=test_key)
+
+    # Load cached features
+    X_train_df = load_cached_features_for_dataset(train_key)
+    X_test_df = load_cached_features_for_dataset(test_key)
+
+    if len(X_train_df) != len(train_df):
+        raise ValueError(f"[{train_key}] features rows {len(X_train_df)} != df rows {len(train_df)}")
+    if len(X_test_df) != len(test_df):
+        raise ValueError(f"[{test_key}] features rows {len(X_test_df)} != df rows {len(test_df)}")
+
+    # Align columns (important if column order differs)
+    train_cols = list(X_train_df.columns)
+    test_cols = set(X_test_df.columns)
+    missing = [c for c in train_cols if c not in test_cols]
+    if missing:
+        raise ValueError(f"[{test_key}] missing feature columns: {missing[:8]} ... ({len(missing)} total)")
+    X_test_df = X_test_df[train_cols]
+
+    X_train = X_train_df.values
+    X_test = X_test_df.values
+    y_train = train_df["label"].values
+    y_test = test_df["label"].values
+
+    xgb_device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    def build_model(name: str):
+        if name == "LogReg":
+            return LogisticRegression(max_iter=1000, C=1.0, random_state=SEED, class_weight="balanced"), True
+        if name == "RandomForest":
+            return RandomForestClassifier(n_estimators=100, max_depth=15, random_state=SEED, class_weight="balanced"), False
+        if name == "XGBoost":
+            return xgb.XGBClassifier(
+                n_estimators=100, max_depth=6, learning_rate=0.1,
+                random_state=SEED, eval_metric="mlogloss",
+                tree_method="hist", device=xgb_device,
+            ), False
+        raise ValueError(f"Unknown model: {name}")
+
+    results = []
+    for name in model_names:
+        model, needs_scale = build_model(name)
+
+        Xtr, Xte = X_train, X_test
+        if needs_scale:
+            scaler = StandardScaler()
+            Xtr = scaler.fit_transform(X_train)   # fit ONLY on train
+            Xte = scaler.transform(X_test)
+
+        model.fit(Xtr, y_train)
+        y_pred = model.predict(Xte)
+
+        res = {
+            "train_dataset": train_key,
+            "test_dataset": test_key,
+            "model": name,
+            "macro_f1": float(f1_score(y_test, y_pred, average="macro")),
+            "accuracy": float(accuracy_score(y_test, y_pred)),
+            "adjacent_acc": float(np.mean(np.abs(y_test - y_pred) <= 1)),
+            "kappa": float(cohen_kappa_score(y_test, y_pred, weights="quadratic")),
+            "confusion_matrix": confusion_matrix(y_test, y_pred, labels=list(range(6))).tolist(),
+        }
+        results.append(res)
+        log(f"{name:<12}  Macro-F1={res['macro_f1']:.4f}  Acc={res['accuracy']:.4f}  AdjAcc={res['adjacent_acc']:.4f}  Kappa={res['kappa']:.4f}")
+
+    return results
+
+
+def run_cross_task_bert(train_key: str, test_key: str):
+    log("\n" + "="*60)
+    log(f"CROSS-TASK (BERT): {train_key} -> {test_key}")
+    log("="*60)
+
+    train_df = load_data(dataset_key=train_key)
+    test_df  = load_data(dataset_key=test_key)
+
+    # small validation split from TRAIN dataset (for early selection)
+    tr_texts = train_df["text"].tolist()
+    tr_y = train_df["label"].values
+
+    train_texts, val_texts, train_labels, val_labels = train_test_split(
+        tr_texts, tr_y, test_size=0.1, random_state=SEED, stratify=tr_y
+    )
+
+    model, tokenizer = train_bert_cross_task(
+        train_texts, train_labels.tolist(),
+        val_texts, val_labels.tolist()
+    )
+
+    # evaluate on the OTHER dataset
+    te_texts = test_df["text"].tolist()
+    te_y = test_df["label"].values
+    res = eval_bert_on_dataset(model, tokenizer, te_texts, te_y.tolist())
+
+    log(f"BERT transfer Macro-F1={res['macro_f1']:.4f} Acc={res['accuracy']:.4f} AdjAcc={res['adjacent_acc']:.4f} Kappa={res['kappa']:.4f}")
+
+    del model
+    torch.cuda.empty_cache()
+    return res
+
+
 def run_interpretable_models(features_df, labels, splits, feature_groups):
     log("\n" + "="*60)
     log("EXPERIMENT 2: Interpretable Classifiers")
@@ -472,6 +596,90 @@ def encode_texts_with_tokenizer(texts, tokenizer, max_len=DAN_MAX_LEN):
         return_tensors="pt",
     )
     return encodings["input_ids"], encodings["attention_mask"]
+
+
+def train_bert_cross_task(train_texts, train_labels, val_texts, val_labels):
+    device = torch.device(DEVICE if torch.cuda.is_available() else "cpu")
+    tokenizer = BertTokenizer.from_pretrained(BERT_MODEL_NAME)
+
+    train_ds = CEFRDataset(train_texts, train_labels, tokenizer)
+    val_ds   = CEFRDataset(val_texts, val_labels, tokenizer)
+
+    train_loader = DataLoader(train_ds, batch_size=BERT_BATCH_SIZE, shuffle=True)
+    val_loader   = DataLoader(val_ds, batch_size=BERT_BATCH_SIZE)
+
+    model = BertForSequenceClassification.from_pretrained(BERT_MODEL_NAME, num_labels=6).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=BERT_LR, weight_decay=0.01)
+
+    total_steps = len(train_loader) * BERT_EPOCHS
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=int(total_steps * BERT_WARMUP_RATIO),
+        num_training_steps=total_steps
+    )
+
+    best_f1 = -1.0
+    best_state = None
+
+    for epoch in range(BERT_EPOCHS):
+        model.train()
+        for batch in train_loader:
+            batch = {k: v.to(device) for k, v in batch.items()}
+            out = model(**batch)
+            loss = out.loss
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            scheduler.step()
+            optimizer.zero_grad()
+
+        # validate
+        model.eval()
+        all_preds = []
+        with torch.no_grad():
+            for batch in val_loader:
+                batch = {k: v.to(device) for k, v in batch.items()}
+                logits = model(**batch).logits
+                preds = torch.argmax(logits, dim=-1)
+                all_preds.extend(preds.cpu().numpy())
+
+        f1 = f1_score(val_labels, np.array(all_preds), average="macro")
+        log(f"[BERT cross-task] epoch {epoch+1}/{BERT_EPOCHS} val Macro-F1={f1:.4f}")
+
+        if f1 > best_f1:
+            best_f1 = f1
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+
+    return model, tokenizer
+
+
+def eval_bert_on_dataset(model, tokenizer, texts, labels):
+    device = torch.device(DEVICE if torch.cuda.is_available() else "cpu")
+    ds = CEFRDataset(texts, labels, tokenizer)
+    loader = DataLoader(ds, batch_size=BERT_BATCH_SIZE)
+
+    model.eval()
+    all_preds = []
+    with torch.no_grad():
+        for batch in loader:
+            batch = {k: v.to(device) for k, v in batch.items()}
+            logits = model(**batch).logits
+            preds = torch.argmax(logits, dim=-1)
+            all_preds.extend(preds.cpu().numpy())
+
+    y_true = np.array(labels)
+    y_pred = np.array(all_preds)
+
+    return {
+        "macro_f1": float(f1_score(y_true, y_pred, average="macro")),
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "adjacent_acc": float(np.mean(np.abs(y_true - y_pred) <= 1)),
+        "kappa": float(cohen_kappa_score(y_true, y_pred, weights="quadratic")),
+        "confusion_matrix": confusion_matrix(y_true, y_pred, labels=list(range(6))).tolist(),
+    }
 
 
 def train_bert_fold(texts, labels, train_idx, test_idx, fold_i):
@@ -937,8 +1145,44 @@ def run_diagnostics(features_df, labels, bert_logits, splits, feature_groups,
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default=DEFAULT_DATASET_KEY)
+    parser.add_argument("--cross_task", action="store_true", help="Run cross-task train->test evaluation (features only)")
+    parser.add_argument("--train_dataset", type=str, default="cefr_sp_en")
+    parser.add_argument("--test_dataset", type=str, default="readme_en")
+    parser.add_argument("--cross_models", type=str, default="XGBoost,RandomForest,LogReg")
+    parser.add_argument("--cross_task_bert", action="store_true")
     args = parser.parse_args()
     dataset_key = args.dataset
+
+    if args.cross_task:
+        model_names = tuple(m.strip() for m in args.cross_models.split(",") if m.strip())
+
+        # run both directions
+        forward = run_cross_task_features(args.train_dataset, args.test_dataset, model_names=model_names)
+        backward = run_cross_task_features(args.test_dataset, args.train_dataset, model_names=model_names)
+
+        out_key = "cross_task"
+        out_dir = results_dir(out_key)
+        os.makedirs(out_dir, exist_ok=True)
+
+        out_path = os.path.join(out_dir, f"{args.train_dataset}_vs_{args.test_dataset}.json")
+        with open(out_path, "w") as f:
+            json.dump({"forward": forward, "backward": backward}, f, indent=2)
+
+        log(f"\nSaved cross-task results to: {out_path}")
+        return
+    
+    if args.cross_task_bert:
+        forward = run_cross_task_bert(args.train_dataset, args.test_dataset)
+        backward = run_cross_task_bert(args.test_dataset, args.train_dataset)
+
+        out_dir = results_dir("cross_task")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f"bert_{args.train_dataset}_vs_{args.test_dataset}.json")
+        with open(out_path, "w") as f:
+            json.dump({"forward": forward, "backward": backward}, f, indent=2)
+
+        log(f"Saved BERT cross-task results to: {out_path}")
+        return
 
     start_time = time.time()
 
