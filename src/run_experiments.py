@@ -27,7 +27,7 @@ from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import (
     f1_score, accuracy_score, classification_report,
     confusion_matrix, cohen_kappa_score, r2_score
@@ -693,6 +693,153 @@ def run_feature_selection_compact_baseline(features_df, labels, splits, feature_
     return out
 
 
+def get_sentence_embeddings(texts, model_name: str, batch_size: int = 64):
+    """
+    Returns numpy array of shape (N, D) for a sentence-transformers model.
+    """
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError as e:
+        raise ImportError("Please install sentence-transformers: pip install sentence-transformers") from e
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = SentenceTransformer(model_name, device=device)
+    emb = model.encode(
+        texts,
+        batch_size=batch_size,
+        show_progress_bar=True,
+        convert_to_numpy=True,
+        normalize_embeddings=False,   # keep raw; we can standardize later
+    )
+    return emb
+
+
+def eval_embedding_probe(embeddings, y, splits, l1_C=None):
+    """
+    Evaluate a linear probe on fixed embeddings with 5-fold CV.
+    If l1_C is None -> L2 logistic regression.
+    If l1_C is not None -> L1 logistic regression (sparse).
+    Returns summary dict with mean/std and avg nonzero dims (for L1).
+    """
+    fold_results = []
+    nonzero_counts = []
+
+    for fold_i, (train_idx, test_idx) in enumerate(splits):
+        X_train, X_test = embeddings[train_idx], embeddings[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+
+        if l1_C is None:
+            clf = LogisticRegression(
+                max_iter=2000,
+                solver="lbfgs",
+                multi_class="multinomial",
+                class_weight="balanced",
+                random_state=SEED,
+            )
+        else:
+            clf = LogisticRegression(
+                max_iter=3000,
+                solver="saga",
+                penalty="l1",
+                C=l1_C,
+                multi_class="multinomial",
+                class_weight="balanced",
+                random_state=SEED,
+            )
+
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict(X_test)
+
+        fold_results.append({
+            "macro_f1": f1_score(y_test, y_pred, average="macro"),
+            "accuracy": accuracy_score(y_test, y_pred),
+            "adjacent_acc": float(np.mean(np.abs(y_test - y_pred) <= 1)),
+        })
+
+        if l1_C is not None:
+            # coef_ shape: (n_classes, D). Count dims used by any class
+            used_dims = np.any(np.abs(clf.coef_) > 1e-8, axis=0)
+            nonzero_counts.append(int(used_dims.sum()))
+
+    mean_f1 = float(np.mean([r["macro_f1"] for r in fold_results]))
+    std_f1 = float(np.std([r["macro_f1"] for r in fold_results]))
+    mean_acc = float(np.mean([r["accuracy"] for r in fold_results]))
+    std_acc = float(np.std([r["accuracy"] for r in fold_results]))
+    mean_adj = float(np.mean([r["adjacent_acc"] for r in fold_results]))
+
+    out = {
+        "macro_f1_mean": mean_f1,
+        "macro_f1_std": std_f1,
+        "accuracy_mean": mean_acc,
+        "accuracy_std": std_acc,
+        "adjacent_acc_mean": mean_adj,
+    }
+    if l1_C is not None:
+        out["nonzero_dims_mean"] = float(np.mean(nonzero_counts))
+        out["nonzero_dims_std"] = float(np.std(nonzero_counts))
+    return out
+
+
+def run_sentence_embedding_analysis(df, splits, dataset_key: str,
+                                   emb_models=("sentence-transformers/all-MiniLM-L6-v2",
+                                               "sentence-transformers/paraphrase-albert-small-v2"),
+                                   l1_C_list=(0.05, 0.1, 0.2, 0.5, 1.0)):
+    log("\n" + "="*60)
+    log("EXPERIMENT 2d: Sentence Embedding Probes (Linear + Sparse)")
+    log("="*60)
+
+    texts = df["text"].tolist()
+    y = df["label"].values
+
+    results = {}
+
+    for m in emb_models:
+        log(f"\n--- Embedding model: {m} ---")
+        emb = get_sentence_embeddings(texts, m, batch_size=64)
+        log(f"Embeddings shape: {emb.shape}")
+
+        # L2 probe (baseline)
+        l2_res = eval_embedding_probe(emb, y, splits, l1_C=None)
+        log(f"L2 LogReg: Macro-F1={l2_res['macro_f1_mean']:.4f} +/- {l2_res['macro_f1_std']:.4f}, "
+            f"Acc={l2_res['accuracy_mean']:.4f}, AdjAcc={l2_res['adjacent_acc_mean']:.4f}")
+        results[m] = {"l2": l2_res, "l1": {}}
+
+        # L1 sweep for sparsity
+        for C in l1_C_list:
+            l1_res = eval_embedding_probe(emb, y, splits, l1_C=C)
+            log(f"  L1 LogReg (C={C}): Macro-F1={l1_res['macro_f1_mean']:.4f}, "
+                f"nonzero_dims={l1_res['nonzero_dims_mean']:.1f}")
+            results[m]["l1"][str(C)] = l1_res
+
+        # Plot: Macro-F1 vs nonzero dims for L1
+        xs = []
+        ys = []
+        for C in l1_C_list:
+            r = results[m]["l1"][str(C)]
+            xs.append(r["nonzero_dims_mean"])
+            ys.append(r["macro_f1_mean"])
+
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.plot(xs, ys, marker="o")
+        ax.set_xlabel("Avg # nonzero embedding dimensions (L1 probe)")
+        ax.set_ylabel("Macro F1 (5-fold CV)")
+        ax.set_title(f"Sparsity–Performance Tradeoff ({dataset_key})\n{m}")
+        plt.tight_layout()
+        safe_name = m.split("/")[-1].replace("-", "_")
+        plt.savefig(os.path.join(FIGURES_DIR, f"embedding_l1_tradeoff_{safe_name}.png"), dpi=150)
+        plt.close()
+
+    # Save
+    with open(os.path.join(RESULTS_DIR, "embedding_probe_results.json"), "w") as f:
+        json.dump(results, f, indent=2)
+
+    return results
+
+
 # ══════════════════════════════════════════════════════════════════════
 # EXPERIMENT 3: BERT Fine-tuning
 # ══════════════════════════════════════════════════════════════════════
@@ -1318,6 +1465,7 @@ def main():
     parser.add_argument("--cross_models", type=str, default="XGBoost,RandomForest,LogReg")
     parser.add_argument("--cross_task_bert", action="store_true")
     parser.add_argument("--feature_select_only", action="store_true")
+    parser.add_argument("--embedding_probe_only", action="store_true")
     args = parser.parse_args()
     dataset_key = args.dataset
 
@@ -1369,6 +1517,11 @@ def main():
     log("Loading data...")
     df = load_data(dataset_key=dataset_key)
     splits = get_cv_splits(df)
+
+    if args.embedding_probe_only:
+        run_sentence_embedding_analysis(df, splits, dataset_key)
+        log("Embedding probe only run complete.")
+        return
 
     # Load cached features
     log("\nLoading features...")
