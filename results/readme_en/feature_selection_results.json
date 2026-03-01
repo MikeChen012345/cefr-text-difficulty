@@ -1,0 +1,153 @@
+{
+  "k_list": [
+    3,
+    5,
+    8,
+    10,
+    15,
+    20,
+    25,
+    34
+  ],
+  "results_by_k": {
+    "3": {
+      "macro_f1_mean": 0.41866586064671213,
+      "macro_f1_std": 0.022185688125371476
+    },
+    "5": {
+      "macro_f1_mean": 0.40812554417978075,
+      "macro_f1_std": 0.037973667124823376
+    },
+    "8": {
+      "macro_f1_mean": 0.4149031029135169,
+      "macro_f1_std": 0.013989123317466658
+    },
+    "10": {
+      "macro_f1_mean": 0.4013366112548756,
+      "macro_f1_std": 0.02314537052138336
+    },
+    "15": {
+      "macro_f1_mean": 0.40373617626028635,
+      "macro_f1_std": 0.008764508759555223
+    },
+    "20": {
+      "macro_f1_mean": 0.4136905229233806,
+      "macro_f1_std": 0.014084616594216105
+    },
+    "25": {
+      "macro_f1_mean": 0.41950793160216165,
+      "macro_f1_std": 0.004915688384534223
+    },
+    "34": {
+      "macro_f1_mean": 0.4116362786968934,
+      "macro_f1_std": 0.015501892070818302
+    }
+  },
+  "best_k": 25,
+  "stable_features_best_k": [
+    {
+      "feature": "coleman_liau_index",
+      "selected_folds": 5
+    },
+    {
+      "feature": "dale_chall",
+      "selected_folds": 5
+    },
+    {
+      "feature": "flesch_kincaid_grade",
+      "selected_folds": 5
+    },
+    {
+      "feature": "flesch_reading_ease",
+      "selected_folds": 5
+    },
+    {
+      "feature": "guiraud_index",
+      "selected_folds": 5
+    },
+    {
+      "feature": "max_dep_distance",
+      "selected_folds": 5
+    },
+    {
+      "feature": "max_syllables",
+      "selected_folds": 5
+    },
+    {
+      "feature": "max_word_length",
+      "selected_folds": 5
+    },
+    {
+      "feature": "mean_dep_distance",
+      "selected_folds": 5
+    },
+    {
+      "feature": "mean_sent_length",
+      "selected_folds": 5
+    },
+    {
+      "feature": "mean_syllables",
+      "selected_folds": 5
+    },
+    {
+      "feature": "mean_tree_depth",
+      "selected_folds": 5
+    },
+    {
+      "feature": "mean_word_length",
+      "selected_folds": 5
+    },
+    {
+      "feature": "n_subclauses",
+      "selected_folds": 5
+    },
+    {
+      "feature": "n_tokens",
+      "selected_folds": 5
+    },
+    {
+      "feature": "n_unique_pos",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_adj",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_adp",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_conj",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_long_words",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_noun",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_verb",
+      "selected_folds": 5
+    },
+    {
+      "feature": "smog_index",
+      "selected_folds": 5
+    },
+    {
+      "feature": "std_word_length",
+      "selected_folds": 5
+    },
+    {
+      "feature": "ttr",
+      "selected_folds": 5
+    }
+  ],
+  "settings": {
+    "corr_threshold": 0.95,
+    "do_prune": true
+  }
+}

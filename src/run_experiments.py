@@ -27,6 +27,7 @@ from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     f1_score, accuracy_score, classification_report,
     confusion_matrix, cohen_kappa_score, r2_score
@@ -181,6 +182,68 @@ def eval_classifier(model_fn, X, y, splits, scale=False):
             "kappa": cohen_kappa_score(y_test, y_pred, weights="quadratic"),
         })
     return fold_results
+
+
+def _prune_correlated_features(X_train, feature_names, corr_threshold=0.95):
+    """
+    Greedy correlation pruning on TRAIN ONLY.
+    Returns indices of kept features.
+    """
+    df = pd.DataFrame(X_train, columns=feature_names)
+    corr = df.corr().abs()
+    keep = []
+    dropped = set()
+
+    # simple greedy: iterate features in original order
+    for i, fi in enumerate(feature_names):
+        if fi in dropped:
+            continue
+        keep.append(i)
+        # drop anything highly correlated with fi
+        high = corr.columns[(corr.iloc[i] > corr_threshold).values].tolist()
+        for fj in high:
+            if fj != fi:
+                dropped.add(fj)
+
+    return keep
+
+
+def _rank_features_by_spearman(X_train, y_train, feature_names):
+    """
+    Rank features by |Spearman rho| with ordinal label on TRAIN ONLY.
+    Returns list of feature indices sorted descending by |rho|.
+    """
+    rhos = []
+    for j, name in enumerate(feature_names):
+        rho, _ = stats.spearmanr(X_train[:, j], y_train)
+        if np.isnan(rho):
+            rho = 0.0
+        rhos.append(abs(rho))
+    ranked = np.argsort(rhos)[::-1]
+    return ranked, np.array(rhos)
+
+
+def select_topk_features_train_only(X_train, y_train, feature_names, k, corr_threshold=0.95, do_prune=True):
+    """
+    Fold-safe selection: uses ONLY X_train/y_train.
+    Optionally prunes correlated features, then selects top-k by |Spearman rho|.
+    Returns selected indices in the ORIGINAL feature space.
+    """
+    idx_all = np.arange(len(feature_names))
+
+    # prune correlated features first
+    if do_prune:
+        keep_idxs = _prune_correlated_features(X_train, feature_names, corr_threshold=corr_threshold)
+        X_sub = X_train[:, keep_idxs]
+        sub_names = [feature_names[i] for i in keep_idxs]
+        ranked_sub, _ = _rank_features_by_spearman(X_sub, y_train, sub_names)
+        chosen_sub = ranked_sub[:k] if k <= len(ranked_sub) else ranked_sub
+        chosen = [keep_idxs[i] for i in chosen_sub]
+    else:
+        ranked, _ = _rank_features_by_spearman(X_train, y_train, feature_names)
+        chosen = ranked[:k].tolist()
+
+    return chosen
 
 
 def summarize_folds(fold_results):
@@ -524,6 +587,110 @@ def run_tfidf_linear_svm(df, splits):
     log(f"TF-IDF + LinearSVM Final: F1={mean_f1:.4f}+/-{std_f1:.4f}, "
         f"Acc={mean_acc:.4f}+/-{std_acc:.4f}")
     return results
+
+
+def run_feature_selection_compact_baseline(features_df, labels, splits, feature_names,
+                                          k_list=(3,5,8,10,15,20,25,34),
+                                          corr_threshold=0.95,
+                                          do_prune=True):
+    """
+    Evaluate XGBoost with top-k selected features (selection done inside each fold).
+    Outputs:
+      - curve of Macro-F1 vs k
+      - feature stability counts across folds
+    """
+    log("\n" + "="*60)
+    log("EXPERIMENT 2c: Feature Selection for Compact Baselines (fold-safe)")
+    log("="*60)
+
+    X = features_df.values
+    y = labels.values
+
+    xgb_device = "cuda" if torch.cuda.is_available() else "cpu"
+    xgb_fn = lambda: xgb.XGBClassifier(
+        n_estimators=100, max_depth=6, learning_rate=0.1,
+        random_state=SEED, eval_metric="mlogloss",
+        tree_method="hist", device=xgb_device,
+    )
+
+    results_by_k = {}
+    stability_by_k = {}
+
+    for k in k_list:
+        fold_f1s = []
+        selected_features_all_folds = []
+
+        for fold_i, (train_idx, test_idx) in enumerate(splits):
+            X_train, X_test = X[train_idx], X[test_idx]
+            y_train, y_test = y[train_idx], y[test_idx]
+
+            chosen_idxs = select_topk_features_train_only(
+                X_train, y_train, feature_names, k,
+                corr_threshold=corr_threshold, do_prune=do_prune
+            )
+            selected_features_all_folds.append(chosen_idxs)
+
+            model = xgb_fn()
+            model.fit(X_train[:, chosen_idxs], y_train)
+            y_pred = model.predict(X_test[:, chosen_idxs])
+            fold_f1s.append(f1_score(y_test, y_pred, average="macro"))
+
+        mean_f1 = float(np.mean(fold_f1s))
+        std_f1 = float(np.std(fold_f1s))
+        results_by_k[k] = {"macro_f1_mean": mean_f1, "macro_f1_std": std_f1}
+
+        # stability: count how often each feature is selected across folds
+        counts = np.zeros(len(feature_names), dtype=int)
+        for chosen in selected_features_all_folds:
+            counts[chosen] += 1
+        stability_by_k[k] = counts
+
+        log(f"  top-{k:>2} features: Macro-F1={mean_f1:.4f} +/- {std_f1:.4f}")
+
+    # Plot curve
+    ks = sorted(results_by_k.keys())
+    means = [results_by_k[k]["macro_f1_mean"] for k in ks]
+    stds  = [results_by_k[k]["macro_f1_std"] for k in ks]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.errorbar(ks, means, yerr=stds, marker="o", capsize=4)
+    ax.set_xlabel("Number of selected features (k)")
+    ax.set_ylabel("Macro F1 (5-fold CV)")
+    ax.set_title("Compact Baseline via Fold-safe Feature Selection (XGBoost)")
+    ax.set_xticks(ks)
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURES_DIR, "feature_selection_curve.png"), dpi=150)
+    plt.close()
+
+    # Pick best k
+    best_k = max(results_by_k.keys(), key=lambda k: results_by_k[k]["macro_f1_mean"])
+    best_counts = stability_by_k[best_k]
+    stable_idxs = np.where(best_counts >= 3)[0]  # selected in at least 3/5 folds
+    stable_feats = sorted(
+        [(feature_names[i], int(best_counts[i])) for i in stable_idxs],
+        key=lambda x: (-x[1], x[0])
+    )
+
+    log(f"\nBest k by mean Macro-F1: k={best_k} (F1={results_by_k[best_k]['macro_f1_mean']:.4f})")
+    log("Stable features (selected in >=3 folds at best k):")
+    for name, c in stable_feats[:25]:
+        log(f"  {name}: {c}/5 folds")
+
+    # Save to JSON/CSV
+    out = {
+        "k_list": ks,
+        "results_by_k": results_by_k,
+        "best_k": int(best_k),
+        "stable_features_best_k": [{"feature": n, "selected_folds": c} for n, c in stable_feats],
+        "settings": {"corr_threshold": corr_threshold, "do_prune": do_prune},
+    }
+    with open(os.path.join(RESULTS_DIR, "feature_selection_results.json"), "w") as f:
+        json.dump(out, f, indent=2)
+
+    stable_df = pd.DataFrame(stable_feats, columns=["feature", "selected_folds"])
+    stable_df.to_csv(os.path.join(RESULTS_DIR, "feature_selection_stable_features.csv"), index=False)
+
+    return out
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -1150,6 +1317,7 @@ def main():
     parser.add_argument("--test_dataset", type=str, default="readme_en")
     parser.add_argument("--cross_models", type=str, default="XGBoost,RandomForest,LogReg")
     parser.add_argument("--cross_task_bert", action="store_true")
+    parser.add_argument("--feature_select_only", action="store_true")
     args = parser.parse_args()
     dataset_key = args.dataset
 
@@ -1233,6 +1401,17 @@ def main():
         features_df, df["label"], splits, feature_groups
     )
     tfidf_svm_results = run_tfidf_linear_svm(df, splits)
+    feature_names = features_df.columns.tolist()
+    feature_selection_out = run_feature_selection_compact_baseline(
+        features_df, df["label"], splits, feature_names,
+        k_list=(3,5,8,10,15,20,25,34),
+        corr_threshold=0.95,
+        do_prune=True
+    )
+
+    if args.feature_select_only:
+        log("Feature selection only run complete.")
+        return
 
     # Experiment 3: Neural models
     bert_results, bert_logits = run_bert(df, splits)
