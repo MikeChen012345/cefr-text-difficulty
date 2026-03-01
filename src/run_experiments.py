@@ -736,7 +736,6 @@ def eval_embedding_probe(embeddings, y, splits, l1_C=None):
             clf = LogisticRegression(
                 max_iter=2000,
                 solver="lbfgs",
-                multi_class="multinomial",
                 class_weight="balanced",
                 random_state=SEED,
             )
@@ -746,7 +745,6 @@ def eval_embedding_probe(embeddings, y, splits, l1_C=None):
                 solver="saga",
                 penalty="l1",
                 C=l1_C,
-                multi_class="multinomial",
                 class_weight="balanced",
                 random_state=SEED,
             )
@@ -762,7 +760,7 @@ def eval_embedding_probe(embeddings, y, splits, l1_C=None):
 
         if l1_C is not None:
             # coef_ shape: (n_classes, D). Count dims used by any class
-            used_dims = np.any(np.abs(clf.coef_) > 1e-8, axis=0)
+            used_dims = np.any(np.abs(clf.coef_) > 1e-4, axis=0)
             nonzero_counts.append(int(used_dims.sum()))
 
     mean_f1 = float(np.mean([r["macro_f1"] for r in fold_results]))
@@ -787,7 +785,7 @@ def eval_embedding_probe(embeddings, y, splits, l1_C=None):
 def run_sentence_embedding_analysis(df, splits, dataset_key: str,
                                    emb_models=("sentence-transformers/all-MiniLM-L6-v2",
                                                "sentence-transformers/paraphrase-albert-small-v2"),
-                                   l1_C_list=(0.05, 0.1, 0.2, 0.5, 1.0)):
+                                   l1_C_list=(0.01, 0.005, 0.001)):
     log("\n" + "="*60)
     log("EXPERIMENT 2d: Sentence Embedding Probes (Linear + Sparse)")
     log("="*60)
