@@ -1,0 +1,133 @@
+{
+  "k_list": [
+    3,
+    5,
+    8,
+    10,
+    15,
+    20,
+    25,
+    34
+  ],
+  "results_by_k": {
+    "3": {
+      "macro_f1_mean": 0.35483572305327066,
+      "macro_f1_std": 0.020494887947132386
+    },
+    "5": {
+      "macro_f1_mean": 0.35718501042416434,
+      "macro_f1_std": 0.02518158656270953
+    },
+    "8": {
+      "macro_f1_mean": 0.3746797782849922,
+      "macro_f1_std": 0.016006417102444555
+    },
+    "10": {
+      "macro_f1_mean": 0.3785970991784045,
+      "macro_f1_std": 0.011620936142892405
+    },
+    "15": {
+      "macro_f1_mean": 0.3996131020865204,
+      "macro_f1_std": 0.012852283457504235
+    },
+    "20": {
+      "macro_f1_mean": 0.4133649924419724,
+      "macro_f1_std": 0.01299094566102105
+    },
+    "25": {
+      "macro_f1_mean": 0.4121209732114085,
+      "macro_f1_std": 0.007210497924951479
+    },
+    "34": {
+      "macro_f1_mean": 0.4121254479082365,
+      "macro_f1_std": 0.016237584450149122
+    }
+  },
+  "best_k": 20,
+  "stable_features_best_k": [
+    {
+      "feature": "automated_readability_index",
+      "selected_folds": 5
+    },
+    {
+      "feature": "coleman_liau_index",
+      "selected_folds": 5
+    },
+    {
+      "feature": "dale_chall",
+      "selected_folds": 5
+    },
+    {
+      "feature": "flesch_reading_ease",
+      "selected_folds": 5
+    },
+    {
+      "feature": "guiraud_index",
+      "selected_folds": 5
+    },
+    {
+      "feature": "gunning_fog",
+      "selected_folds": 5
+    },
+    {
+      "feature": "max_dep_distance",
+      "selected_folds": 5
+    },
+    {
+      "feature": "max_syllables",
+      "selected_folds": 5
+    },
+    {
+      "feature": "max_tree_depth",
+      "selected_folds": 5
+    },
+    {
+      "feature": "max_word_length",
+      "selected_folds": 5
+    },
+    {
+      "feature": "mean_dep_distance",
+      "selected_folds": 5
+    },
+    {
+      "feature": "mean_tree_depth",
+      "selected_folds": 5
+    },
+    {
+      "feature": "n_tokens",
+      "selected_folds": 5
+    },
+    {
+      "feature": "n_unique_pos",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_adj",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_long_words",
+      "selected_folds": 5
+    },
+    {
+      "feature": "prop_noun",
+      "selected_folds": 5
+    },
+    {
+      "feature": "smog_index",
+      "selected_folds": 5
+    },
+    {
+      "feature": "std_word_length",
+      "selected_folds": 5
+    },
+    {
+      "feature": "ttr",
+      "selected_folds": 5
+    }
+  ],
+  "settings": {
+    "corr_threshold": 0.95,
+    "do_prune": true
+  }
+}
