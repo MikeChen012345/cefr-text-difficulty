@@ -1,0 +1,14 @@
+{
+  "method": "multi_agent",
+  "dataset_key": "readme_en",
+  "model_idx": 2,
+  "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "cot": true,
+  "few_shots": 4,
+  "n_samples": 300,
+  "accuracy": 0.4066666666666667,
+  "macro_f1": 0.40244027383783604,
+  "adjacent_accuracy": 0.8433333333333334,
+  "average_token_usage": 3342.016666666667,
+  "average_elapsed_time": 40.98730225086212
+}

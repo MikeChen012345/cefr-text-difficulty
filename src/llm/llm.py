@@ -24,8 +24,9 @@ import json
 
 import pandas as pd
 import numpy as np
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import tqdm
+from tqdm import tqdm
 from pathlib import Path
 import re
 
@@ -37,10 +38,8 @@ from langchain.chat_models import init_chat_model, BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from data_loader import load_data_split
-from prompt import SYSTEM_PROMPT_BASE, SYSTEM_PROMPT_COT, system_prompt_few_shots
-from config import results_dir, figures_dir
-RESULTS_DIR = results_dir("cefr_sp_en")
-FIGURES_DIR = figures_dir("cefr_sp_en")
+from prompt import build_system_prompt_llm
+from config import results_dir, figures_dir, CEFR_LEVELS
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +48,13 @@ if not config.get("api_key") or not config.get("api_key").strip(): # None or emp
     from utils.inference_auth_token import get_access_token # for inference service
     config["api_key"] = get_access_token()
     config["model_provider"] = "openai" # openai-compatible API
+
+# Set the dataset to use
+DATASET_KEY = "readme_en" # "cefr_sp_en" # 
+
+# Setup directories for results and figures based 
+RESULTS_DIR = results_dir(DATASET_KEY)
+FIGURES_DIR = figures_dir(DATASET_KEY)
 
 
 def _extract_model_size(model_name: str) -> Optional[float]:
@@ -155,7 +161,8 @@ def _record_usage(response: AIMessage, include: bool = True) -> int:
 
 
 def llm(model: BaseChatModel, text: str, cot: bool = False, few_shots: int = 0) -> tuple[str, str, int, float]:
-    """Run a single-turn hypothesis improvement using only an LLM.
+    """
+    Run a single-turn CEFR level prediction using only an LLM.
     Args:
         model: The LLM instance to use for inference.
         text: The input text to rate the CEFR level of.
@@ -172,10 +179,7 @@ def llm(model: BaseChatModel, text: str, cot: bool = False, few_shots: int = 0) 
     if not text:
         raise ValueError("Input text is empty.")
 
-    if few_shots > 0:
-        system_prompt = system_prompt_few_shots(n=few_shots, cot=cot)
-    else:
-        system_prompt = SYSTEM_PROMPT_COT if cot else SYSTEM_PROMPT_BASE
+    system_prompt = build_system_prompt_llm(dataset_key=DATASET_KEY, n=few_shots, cot=cot)
 
     # print(f"System prompt:\n{system_prompt}\n")
     # print("=" * 50)
@@ -233,13 +237,13 @@ def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, mode
 
     results_by_idx: Dict[int, Dict[str, str | int | float]] = {}
     if max_workers <= 1:
-        for i in tqdm.tqdm(range(len(test_df)), desc="Evaluating"):
+        for i in tqdm(range(len(test_df)), desc="Evaluating"):
             results_by_idx[i] = _eval_one(i)
     else:
         logger.info("Evaluating %d samples with max_workers=%d", len(test_df), max_workers)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {executor.submit(_eval_one, i): i for i in range(len(test_df))}
-            for fut in tqdm.tqdm(
+            for fut in tqdm(
                 as_completed(future_to_idx),
                 total=len(future_to_idx),
                 desc="Evaluating",
@@ -263,23 +267,43 @@ _RUN_FILE_RE = re.compile(
 )
 
 
-def _compute_metrics(results: List[Dict[str, str | int | float]]) -> Tuple[float, float, float]:
+def _is_adjacent_prediction(true_label: str, predicted_label: str) -> bool:
+    true_normalized = str(true_label).strip().upper()
+    predicted_normalized = str(predicted_label).strip().upper()
+    if true_normalized not in CEFR_LEVELS or predicted_normalized not in CEFR_LEVELS:
+        return true_normalized == predicted_normalized
+    return abs(CEFR_LEVELS.index(predicted_normalized) - CEFR_LEVELS.index(true_normalized)) <= 1
+
+
+def _compute_metrics(results: List[Dict[str, str | int | float]]) -> Tuple[float, float, float, float, float]:
     total_samples = len(results)
     if total_samples == 0:
-        return 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, 0.0, 0.0
+
+    true_labels = [str(r.get("true_label", "")).strip().upper() for r in results]
+    predicted_labels = [str(r.get("predicted_label", "")).strip().upper() for r in results]
+
     correct_predictions = sum(
         1
-        for r in results
-        if str(r.get("true_label")) == str(r.get("predicted_label"))
+        for true_label, predicted_label in zip(true_labels, predicted_labels, strict=False)
+        if true_label == predicted_label
     )
     accuracy = correct_predictions / total_samples
+    adjacent_correct_predictions = sum(
+        1
+        for true_label, predicted_label in zip(true_labels, predicted_labels, strict=False)
+        if _is_adjacent_prediction(true_label, predicted_label)
+    )
+    adjacent_accuracy = adjacent_correct_predictions / total_samples
+    macro_f1 = float(f1_score(true_labels, predicted_labels, labels=CEFR_LEVELS, average="macro", zero_division=0))
+
     avg_token_usage = (
         sum(float(r.get("token_usage", 0) or 0) for r in results) / total_samples
     )
     avg_elapsed_time = (
         sum(float(r.get("elapsed_time", 0) or 0) for r in results) / total_samples
     )
-    return accuracy, avg_token_usage, avg_elapsed_time
+    return accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time
 
 
 def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
@@ -288,7 +312,8 @@ def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
     Reads all JSON result files in RESULTS_DIR matching the pattern "llm_model*_CoT*_Shot*.json".
     
     Returns:
-        A DataFrame with columns: model_idx, model_name, cot, few_shots, accuracy, average_token_usage, average_elapsed_time.
+        A DataFrame with columns: model_idx, model_name, cot, few_shots, accuracy, macro_f1,
+        adjacent_accuracy, average_token_usage, average_elapsed_time.
     """
     results_dir = results_dir or Path(RESULTS_DIR)
     rows: List[Dict[str, str | int | float | bool]] = []
@@ -305,7 +330,7 @@ def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
         with file.open("r", encoding="utf-8") as f:
             results = json.load(f)
 
-        accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(results)
+        accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(results)
         model_name = ""
         try:
             model_name = config.get("models", [])[model_idx]
@@ -319,6 +344,8 @@ def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
                 "cot": cot,
                 "few_shots": few_shots,
                 "accuracy": accuracy,
+                "macro_f1": macro_f1,
+                "adjacent_accuracy": adjacent_accuracy,
                 "average_token_usage": avg_token_usage,
                 "average_elapsed_time": avg_elapsed_time,
             }
@@ -332,10 +359,81 @@ def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
             "cot",
             "few_shots",
             "accuracy",
+            "macro_f1",
+            "adjacent_accuracy",
             "average_token_usage",
             "average_elapsed_time",
         ],
     )
+
+
+def plot_single_run_confusion_matrix(
+    results: List[Dict[str, str | int | float]],
+    model_idx: int,
+    cot: bool,
+    few_shots: int,
+    out_dir: Path | None = None,
+) -> Optional[Path]:
+    out_dir = out_dir or Path(FIGURES_DIR)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    labels = CEFR_LEVELS
+    true_labels = [str(r.get("true_label", "")).strip().upper() for r in results]
+    predicted_labels = [str(r.get("predicted_label", "")).strip().upper() for r in results]
+
+    if not true_labels or not predicted_labels:
+        logger.warning("No predictions available to plot single confusion matrix.")
+        return None
+
+    cm = confusion_matrix(true_labels, predicted_labels, labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+
+    fig_cm, ax_cm = plt.subplots(figsize=(6, 6))
+    disp.plot(ax=ax_cm, cmap="Blues", colorbar=False)
+    ax_cm.set_title("")
+
+    out_path_cm = out_dir / f"llm_single_confusion_matrix_model{model_idx}_CoT{cot}_shot{few_shots}.png"
+    fig_cm.tight_layout()
+    fig_cm.savefig(out_path_cm, dpi=200)
+    plt.close(fig_cm)
+    print(f"Saved single-run confusion matrix to: {out_path_cm}")
+    return out_path_cm
+
+
+def run_best_model(model_idx: int, cot: bool, few_shots: int) -> None:
+    _, test_df = load_data_split(dataset_key=DATASET_KEY)
+    model = _build_model(model_idx)
+    print(f"Evaluating best LLM model {model_idx} with cot={cot} and few_shots={few_shots}...")
+    results = evaluate_model_on_test_set(test_df, model, model_idx, cot=cot, few_shots=few_shots)
+    accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(results)
+
+    best_summary = {
+        "method": "llm",
+        "dataset_key": DATASET_KEY,
+        "model_idx": model_idx,
+        "model_name": str(config.get("models", [""])[model_idx]) if model_idx < len(config.get("models", [])) else "",
+        "cot": bool(cot),
+        "few_shots": int(few_shots),
+        "n_samples": len(results),
+        "accuracy": accuracy,
+        "macro_f1": macro_f1,
+        "adjacent_accuracy": adjacent_accuracy,
+        "average_token_usage": avg_token_usage,
+        "average_elapsed_time": avg_elapsed_time,
+    }
+
+    best_summary_path = Path(RESULTS_DIR) / f"llm_best_model{model_idx}_CoT{cot}_Shot{few_shots}_summary.json"
+    with best_summary_path.open("w", encoding="utf-8") as f:
+        json.dump(best_summary, f, ensure_ascii=False, indent=2)
+
+    print(
+        "Best LLM model "
+        f"{model_idx} results - Accuracy: {accuracy:.4f}, Macro-F1: {macro_f1:.4f}, "
+        f"Adjacent accuracy: {adjacent_accuracy:.4f}, Avg. token usage: {avg_token_usage:.2f}, "
+        f"Avg. time: {avg_elapsed_time:.2f}s"
+    )
+    print(f"Saved best-run summary JSON to: {best_summary_path}")
+    plot_single_run_confusion_matrix(results, model_idx=model_idx, cot=cot, few_shots=few_shots)
 
 
 def save_summary_to_file(
@@ -423,12 +521,14 @@ def plot_model_size_summary(
     x_no = df_no["model_size_b"].astype(float).tolist()
     x_yes = df_yes["model_size_b"].astype(float).tolist()
 
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(13, 4), sharex=True)
+    fig, axes = plt.subplots(nrows=1, ncols=5, figsize=(21, 4), sharex=True)
 
     metric_specs = [
         ("accuracy", "Accuracy", axes[0]),
-        ("average_token_usage", "Avg. token usage", axes[1]),
-        ("average_elapsed_time", "Avg. time (s)", axes[2]),
+        ("macro_f1", "Macro F1", axes[1]),
+        ("adjacent_accuracy", "Adjacent accuracy", axes[2]),
+        ("average_token_usage", "Avg. token usage", axes[3]),
+        ("average_elapsed_time", "Avg. time (s)", axes[4]),
     ]
 
     legend_handles = None
@@ -471,10 +571,16 @@ def plot_model_size_summary(
     plt.close(fig)
 
     # Create one faceted confusion-matrix figure: rows = [No CoT, CoT], columns = model indices.
-    from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-
     labels = ["A1", "A2", "B1", "B2", "C1", "C2"]
     model_cols = sorted(int(v) for v in plot_df["model_idx"].unique().tolist())
+    model_idx_to_size_label: Dict[int, str] = {}
+    for model_idx_val in model_cols:
+        subset_size = plot_df.loc[plot_df["model_idx"] == model_idx_val, "model_size_b"]
+        if subset_size.empty:
+            model_idx_to_size_label[model_idx_val] = f"model_{model_idx_val}"
+            continue
+        size_value = float(subset_size.iloc[0])
+        model_idx_to_size_label[model_idx_val] = f"{size_value:g}B"
 
     n_cols = len(model_cols)
     fig_cm, axes_cm = plt.subplots(nrows=2, ncols=n_cols, figsize=(4 * n_cols, 8))
@@ -511,7 +617,7 @@ def plot_model_size_summary(
             disp.plot(ax=ax, cmap="Blues", colorbar=False)
 
             if row_i == 0:
-                ax.set_title(f"Model {model_idx_val}")
+                ax.set_title(model_idx_to_size_label.get(model_idx_val, f"model_{model_idx_val}"))
             else:
                 ax.set_title("")
 
@@ -541,10 +647,10 @@ def plot_prompt_summary(
     """Plot prompt-analysis results across number of shots.
 
     X-axis: few_shots
-    Y-axis: (accuracy, average_token_usage, average_elapsed_time)
+    Y-axis: (accuracy, macro_f1, adjacent_accuracy, average_token_usage, average_elapsed_time)
     Lines: one per (model_idx, cot) => 2 models x 2 cot = 4 lines (for prompt_analysis())
 
-    Saves one figure with 3 subplots and a shared legend.
+    Saves one figure with 5 subplots and a shared legend.
     """
     results_dir = results_dir or Path(RESULTS_DIR)
     out_dir = out_dir or Path(FIGURES_DIR)
@@ -560,6 +666,8 @@ def plot_prompt_summary(
         "cot",
         "few_shots",
         "accuracy",
+        "macro_f1",
+        "adjacent_accuracy",
         "average_token_usage",
         "average_elapsed_time",
     }
@@ -598,12 +706,14 @@ def plot_prompt_summary(
 
     x_vals = sorted({int(x) for x in plot_df["few_shots"].unique().tolist()})
 
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(13, 4), sharex=True)
+    fig, axes = plt.subplots(nrows=1, ncols=5, figsize=(21, 4), sharex=True)
 
     metric_specs = [
         ("accuracy", "Accuracy", axes[0]),
-        ("average_token_usage", "Avg. token usage", axes[1]),
-        ("average_elapsed_time", "Avg. time (s)", axes[2]),
+        ("macro_f1", "Macro F1", axes[1]),
+        ("adjacent_accuracy", "Adjacent accuracy", axes[2]),
+        ("average_token_usage", "Avg. token usage", axes[3]),
+        ("average_elapsed_time", "Avg. time (s)", axes[4]),
     ]
 
     handles = []
@@ -666,51 +776,62 @@ def plot_prompt_summary(
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
 
-    # Create confusion matrix plots for each model and CoT setting, faceted by number of shots.
-    # for model_idx_val in sorted(plot_df["model_idx"].unique()):
-    #     for cot_val in [False, True]:
-    #         subset_df = plot_df[(plot_df["model_idx"] == model_idx_val) & (plot_df["cot"] == cot_val)]
-    #         if subset_df.empty:
-    #             continue
+    # Create confusion matrix plots for each model: rows = [No CoT, CoT], cols = [few_shots].
+    cm_labels = ["A1", "A2", "B1", "B2", "C1", "C2"]
+    cot_rows = [False, True]
+    shot_values = sorted({int(x) for x in plot_df["few_shots"].unique().tolist()})
 
-    #         n_shots_list = sorted(subset_df["few_shots"].unique().tolist())
-    #         n_cols = min(len(n_shots_list), 3)
-    #         n_rows = (len(n_shots_list) + n_cols - 1) // n_cols
-    #         fig_cm, axes_cm = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(4 * n_cols, 4 * n_rows))
-    #         axes_cm = axes_cm.flatten() if isinstance(axes_cm, np.ndarray) else [axes_cm]
+    for model_idx_val in sorted(plot_df["model_idx"].unique()):
+        model_idx_val = int(model_idx_val)
+        n_cols = len(shot_values)
+        if n_cols == 0:
+            continue
 
-    #         for i, shots in enumerate(n_shots_list):
-    #             results_file = results_dir / f"llm_model{int(model_idx_val)}_CoT{cot_val}_Shot{shots}.json"
-    #             if not results_file.exists():
-    #                 continue
+        fig_cm, axes_cm = plt.subplots(nrows=2, ncols=n_cols, figsize=(4 * n_cols, 8))
+        if n_cols == 1:
+            axes_cm = np.array(axes_cm).reshape(2, 1)
 
-    #             with results_file.open("r", encoding="utf-8") as f:
-    #                 results = json.load(f)
+        for row_i, cot_val in enumerate(cot_rows):
+            for col_i, shots in enumerate(shot_values):
+                ax = axes_cm[row_i, col_i]
 
-    #             true_labels = [r.get("true_label", "") for r in results]
-    #             predicted_labels = [r.get("predicted_label", "") for r in results]
+                results_file = results_dir / f"llm_model{model_idx_val}_CoT{cot_val}_Shot{shots}.json"
+                if results_file.exists():
+                    with results_file.open("r", encoding="utf-8") as f:
+                        results = json.load(f)
+                    true_labels = [r.get("true_label", "") for r in results]
+                    predicted_labels = [r.get("predicted_label", "") for r in results]
+                    cm = confusion_matrix(true_labels, predicted_labels, labels=cm_labels)
+                else:
+                    cm = np.zeros((len(cm_labels), len(cm_labels)), dtype=int)
 
-    #             from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+                disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=cm_labels)
+                disp.plot(ax=ax, cmap="Blues", colorbar=False)
 
-    #             cm = confusion_matrix(true_labels, predicted_labels, labels=["A1", "A2", "B1", "B2", "C1", "C2"])
-    #             disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["A1", "A2", "B1", "B2", "C1", "C2"])
-    #             disp.plot(ax=axes_cm[i], cmap="Blues", colorbar=False)
-    #             axes_cm[i].set_title(f"Model {model_idx_to_label.get(int(model_idx_val), f'model_{model_idx_val}')} - {'CoT' if cot_val else 'No CoT'} - {shots}-shot")
+                if col_i == 0:
+                    ax.set_ylabel(f"{'CoT' if cot_val else 'No CoT'}\nTrue label")
+                else:
+                    ax.set_ylabel("")
+                if row_i == len(cot_rows) - 1:
+                    ax.set_xlabel("Predicted label")
+                else:
+                    ax.set_xlabel("")
 
-    #             # Hide any unused subplots.
-    #             for j in range(i + 1, len(axes_cm)):
-    #                 axes_cm[j].axis("off")
+                if row_i == 0:
+                    ax.set_title(f"{shots}-shot")
+                else:
+                    ax.set_title("")
 
-    #             out_path_cm = out_dir / f"llm_confusion_matrices_model{model_idx_val}_CoT{cot_val}_Shot{shots}.png"
-    #             fig_cm.tight_layout()
-    #             fig_cm.savefig(out_path_cm, dpi=200)
-    #             plt.close(fig_cm)
+        fig_cm.tight_layout()
+        out_path_cm = out_dir / f"llm_prompt_confusion_matrix_model{model_idx_val}.png"
+        fig_cm.savefig(out_path_cm, dpi=200)
+        plt.close(fig_cm)
 
     print(f"Saved prompt analysis figure to: {out_path}")
 
 
 def model_size_analysis():
-    _, test_df = load_data_split()
+    _, test_df = load_data_split(dataset_key=DATASET_KEY)
     n_few_shot = [0] # only do 0-shot for model size analysis to isolate the effect of model size without few-shot examples
     cot = config["prompting"]["cot"]
     params_comb = [(cot_val, few_shot_val) for cot_val in cot for few_shot_val in n_few_shot]
@@ -729,7 +850,7 @@ def model_size_analysis():
 
 
 def prompt_analysis():
-    _, test_df = load_data_split()
+    _, test_df = load_data_split(dataset_key=DATASET_KEY)
     n_few_shot = config["prompting"]["n_few_shots"]
     cot = config["prompting"]["cot"]
     params_comb = [(cot_val, few_shot_val) for cot_val in cot for few_shot_val in n_few_shot]
@@ -771,10 +892,16 @@ def main(mode: Optional[str] = None) -> None:
 if __name__ == "__main__":
     # main(mode="model_size")
     # main(mode="prompt")
-    plot_model_size_summary(df=summarize_results())
+    # plot_model_size_summary(df=summarize_results())
     # plot_prompt_summary(df=summarize_results(), model_idx=[2, 3])
+
+    # Run the best model with chosen parameters (use the same parameters for the two datasets for consistency)
+    best_model_idx = 2
+    best_model_cot = True
+    best_model_few_shots = 4
+    run_best_model(model_idx=best_model_idx, cot=best_model_cot, few_shots=best_model_few_shots)
     
-    # model_idx = 0
+    # model_idx = 3
     # cot = True
     # few_shots = 0
 
@@ -796,4 +923,4 @@ if __name__ == "__main__":
 
     # Run evaluation on the entire test set
     # model = _build_model(model_idx)
-    # evaluate_model_on_test_set(test_df, model, cot=cot, few_shots=few_shots)
+    # evaluate_model_on_test_set(test_df, model, model_idx, cot=cot, few_shots=few_shots)

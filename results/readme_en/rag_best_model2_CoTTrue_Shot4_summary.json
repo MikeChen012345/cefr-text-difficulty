@@ -1,0 +1,14 @@
+{
+  "method": "rag",
+  "dataset_key": "readme_en",
+  "model_idx": 2,
+  "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "cot": true,
+  "few_shots": 4,
+  "n_samples": 300,
+  "accuracy": 0.37666666666666665,
+  "macro_f1": 0.34765777911497847,
+  "adjacent_accuracy": 0.8633333333333333,
+  "average_token_usage": 1238.0733333333333,
+  "average_elapsed_time": 11.129835423628489
+}

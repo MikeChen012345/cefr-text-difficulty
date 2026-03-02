@@ -1,0 +1,14 @@
+{
+  "method": "llm",
+  "dataset_key": "readme_en",
+  "model_idx": 2,
+  "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "cot": true,
+  "few_shots": 4,
+  "n_samples": 300,
+  "accuracy": 0.4033333333333333,
+  "macro_f1": 0.3795480436289968,
+  "adjacent_accuracy": 0.89,
+  "average_token_usage": 836.9166666666666,
+  "average_elapsed_time": 8.22372783501943
+}

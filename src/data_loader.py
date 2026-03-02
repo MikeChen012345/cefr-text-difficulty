@@ -37,8 +37,8 @@ def _ensure_cached(dataset_key: str):
 
 def load_data(dataset_key: str = DEFAULT_DATASET_KEY, split: str = "train") -> pd.DataFrame:
     """Load a UniversalCEFR dataset split and return DataFrame with numeric labels."""
-    print("=" * 60)
-    print(f"Loading dataset_key={dataset_key}, split={split}")
+    # print("=" * 60)
+    # print(f"Loading dataset_key={dataset_key}, split={split}")
 
     _ensure_cached(dataset_key)
 
@@ -59,9 +59,9 @@ def load_data(dataset_key: str = DEFAULT_DATASET_KEY, split: str = "train") -> p
     df["label"] = df["cefr_level"].map(CEFR_TO_INT)
     df = df.dropna(subset=["label"]).reset_index(drop=True)
 
-    print(f"Loaded {len(df)} samples")
-    print("Label distribution:\n", df["cefr_level"].value_counts().reindex(CEFR_LEVELS).fillna(0).astype(int))
-    print("=" * 60)
+    # print(f"Loaded {len(df)} samples")
+    # print("Label distribution:\n", df["cefr_level"].value_counts().reindex(CEFR_LEVELS).fillna(0).astype(int))
+    # print("=" * 60)
     return df
 
 def load_data_split(dataset_key: str = DEFAULT_DATASET_KEY, n_test_per_level: int = 50, split: str = "train"):

@@ -39,7 +39,7 @@ SYSTEM_PROMPT_BASE = SYSTEM_PROMPT_TEMPLATE + INSTRUCTION
 SYSTEM_PROMPT_COT = SYSTEM_PROMPT_BASE + INSTRUCTION_COT
 
 @lru_cache(maxsize=1)
-def _get_train_records() -> tuple[dict, ...]:
+def _get_train_records(dataset_key: str) -> tuple[dict, ...]:
     """Load and cache training records for few-shot prompt construction.
 
     Cached in-memory because the dataset is small and the few-shot prompt builder is called
@@ -50,12 +50,12 @@ def _get_train_records() -> tuple[dict, ...]:
     sys.path.append("..")
     from data_loader import load_data_split
 
-    train_df, _ = load_data_split()
+    train_df, _ = load_data_split(dataset_key=dataset_key)
     # Tuple is immutable/hash-stable for caching; contains dicts (records).
     return tuple(train_df.to_dict(orient="records"))
 
 
-def system_prompt_few_shots(n: int = 1, cot: bool = False) -> str:
+def build_system_prompt_few_shots(dataset_key: str, n: int = 1, cot: bool = False) -> str:
     """
     Construct a few-shots system prompt by appending n randomly selected examples of CEFR level assessments to the base system prompt template. 
     Each example should include a corresponding CEFR level label formatted as specified in the template.
@@ -67,7 +67,7 @@ def system_prompt_few_shots(n: int = 1, cot: bool = False) -> str:
     Returns:
         A string containing the complete system prompt with n examples appended.
     """
-    train_records = _get_train_records()
+    train_records = _get_train_records(dataset_key=dataset_key)
     examples = random.sample(list(train_records), k=min(n, len(train_records)))
     example_strs = []
     for example in examples:
@@ -76,4 +76,40 @@ def system_prompt_few_shots(n: int = 1, cot: bool = False) -> str:
         "\n".join(example_strs) + (INSTRUCTION_COT if cot else INSTRUCTION)
 
 
+def build_system_prompt_llm(dataset_key: str, n: int, cot: bool) -> str:
+    """Return a system prompt based on the number of few-shot examples and whether to include a CoT rationale."""
+    if n > 0:
+        return build_system_prompt_few_shots(dataset_key=dataset_key, n=n, cot=cot)
+    else:
+        return SYSTEM_PROMPT_COT if cot else SYSTEM_PROMPT_BASE
 
+### ----------------------------------------------------------------
+### Agent prompts
+### ----------------------------------------------------------------
+def build_system_prompt_rag_only(dataset_key: str, n: int, cot: bool) -> str:
+    """Return a system prompt for RAG-only mode with n examples and optional CoT rationale."""
+    return build_system_prompt_llm(dataset_key=dataset_key, n=n, cot=cot) + \
+"\n\nUse the provided text-CEFR level pairs from the RAG-based retrieval as context to inform your CEFR level assessment of the input text. "
+
+
+def build_system_prompt_multi_agent(dataset_key: str, n: int, cot: bool) -> str:
+    """Return a system prompt for multi-agent mode with n examples and optional CoT rationale."""
+    return build_system_prompt_llm(dataset_key=dataset_key, n=n, cot=cot) + \
+"\n\nIn addition to your own analysis, you will also receive a critique of the rationale behind your CEFR level assessment from a separate critique agent after you provide your initial assessment. " + \
+"Use the critique's feedback to refine your CEFR level assessment and provide a final CEFR level for the input text. "
+
+
+def build_system_prompt_critique() -> str:
+    """Return a system prompt for the critique agent."""
+    return "You are a helpful and precise assistant for checking the quality of CEFR level assessments. " +\
+    "Given an input text, a proposed CEFR level assessment, and the rationale behind that assessment, your task is to critique the quality of the rationale and the accuracy of the CEFR level assessment. " +\
+    "Evaluate whether the rationale sufficiently justifies the CEFR level assessment based on the criteria of vocabulary, grammar, cohesion and coherence, and task achievement. " +\
+    "Provide constructive feedback on how the rationale could be improved to better support the CEFR level assessment, and identify any potential weaknesses or gaps in the rationale's explanation. " +\
+    "Your response should be a critique of the rationale and its connection to the CEFR level, rather than a direct assessment of the CEFR level itself. "
+
+
+def build_system_prompt_tool(dataset_key: str, n: int, cot: bool) -> str:
+    """Return a system prompt for the tool-using agent."""
+    return build_system_prompt_llm(dataset_key=dataset_key, n=n, cot=cot) + \
+"\n\nYou may call CEFR-analysis tools for vocabulary, grammar, cohesion/coherence, and task achievement. " + \
+	"Base your decision on tool outputs and text evidence."

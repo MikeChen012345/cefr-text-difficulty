@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-import warnings
-warnings.filterwarnings(action="ignore", message="Protobuf gencode version")
-warnings.filterwarnings(action="ignore", message=r".*embeddings\.position_ids.*UNEXPECTED.*")
-warnings.filterwarnings(action="ignore", message=r".*UNEXPECTED.*embeddings\.position_ids.*")
-
 import yaml
 import sys
 import os
@@ -27,9 +22,6 @@ from typing import Dict, List, Tuple, Optional
 import time
 import json
 import importlib.util
-import io
-import contextlib
-from functools import lru_cache
 
 import pandas as pd
 import numpy as np
@@ -39,49 +31,36 @@ from tqdm import tqdm
 from pathlib import Path
 import re
 
-try:
-    from transformers.utils import logging as hf_logging
-    hf_logging.set_verbosity_error()
-except Exception:
-    pass
-
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer
 from langchain.chat_models import init_chat_model, BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from data_loader import load_data_split
-from prompt import build_system_prompt_rag_only
+from prompt import build_system_prompt_multi_agent, build_system_prompt_critique
 from config import results_dir, figures_dir
 
 logger = logging.getLogger(__name__)
 
-try:
-    from llm.llm import _record_usage, _message_text, _extract_final_answer, _compute_metrics
-except ModuleNotFoundError:
-    llm_file = Path(__file__).with_name("llm.py")
-    llm_spec = importlib.util.spec_from_file_location("llm_helpers_module", llm_file)
-    if llm_spec is None or llm_spec.loader is None:
-        raise ModuleNotFoundError(f"Unable to load helper functions from {llm_file}")
-    llm_module = importlib.util.module_from_spec(llm_spec)
-    llm_spec.loader.exec_module(llm_module)
-    _record_usage = llm_module._record_usage
-    _message_text = llm_module._message_text
-    _extract_final_answer = llm_module._extract_final_answer
-    _compute_metrics = llm_module._compute_metrics
+# Reuse helper implementations from llm.py (single source of truth)
+llm_file = Path(__file__).with_name("llm.py")
+llm_spec = importlib.util.spec_from_file_location("llm_helpers_module", llm_file)
+if llm_spec is None or llm_spec.loader is None:
+    raise ModuleNotFoundError(f"Unable to load helper functions from {llm_file}")
+llm_module = importlib.util.module_from_spec(llm_spec)
+llm_spec.loader.exec_module(llm_module)
+_record_usage = llm_module._record_usage
+_message_text = llm_module._message_text
+_extract_final_answer = llm_module._extract_final_answer
+_compute_metrics = llm_module._compute_metrics
 
-if not config.get("api_key") or not config.get("api_key").strip(): # None or empty string
+if not config.get("api_key") or not config.get("api_key").strip():  # None or empty string
     logger.warning("No API key found in config.yaml; will attempt to retrieve from inference service")
-    from utils.inference_auth_token import get_access_token # for inference service
+    from utils.inference_auth_token import get_access_token  # for inference service
     config["api_key"] = get_access_token()
-    config["model_provider"] = "openai" # openai-compatible API
-
-# number of top results to return for rag
-K = 10
+    config["model_provider"] = "openai"  # openai-compatible API
 
 # Set the dataset to use
 DATASET_KEY = "cefr_sp_en" # "readme_en" # 
@@ -107,37 +86,6 @@ def _extract_model_size(model_name: str) -> Optional[float]:
     return None
 
 
-@lru_cache(maxsize=1)
-def _get_qdrant_client() -> QdrantClient:
-    return QdrantClient(url="http://localhost:13031")
-
-
-@lru_cache(maxsize=1)
-def _get_embedding_model() -> SentenceTransformer:
-    # Silence one-time model loading logs that can disrupt tqdm output.
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        model = SentenceTransformer("sentence-transformers/paraphrase-albert-small-v2")
-    return model
-
-
-def get_rag_top_k(query: str, k: int = K) -> List[Tuple[str, str]]:
-    client = _get_qdrant_client()
-    embedding_model = _get_embedding_model()
-
-    query_vector = embedding_model.encode([query], show_progress_bar=False)[0].tolist()
-    points = client.query_points(
-        collection_name=DATASET_KEY,
-        query=query_vector,
-        limit=k,
-        with_payload=True,
-    ).points
-    results: List[Tuple[str, str]] = []
-    for point in points:
-        payload = point.payload or {}
-        results.append((str(payload.get("text", "")), str(payload.get("cefr_level", ""))))
-    return results
-
-
 def _build_model(model_idx: int) -> BaseChatModel:
     print(f"Building model with {config['models'][model_idx]}, temperature={config['temperature']}, timeout={config['timeout']}s")
     print("=" * 50)
@@ -153,45 +101,84 @@ def _build_model(model_idx: int) -> BaseChatModel:
     )
 
 
-def rag_llm(model: BaseChatModel, text: str, cot: bool = False, few_shots: int = 0) -> tuple[str, str, int, float]:
-    """
-    Run a single-turn CEFR level prediction using an LLM with RAG retrieval.
-    Args:
-        model: The LLM instance to use for inference.
-        text: The input text to rate the CEFR level of.
-        cot: Whether to include a chain-of-thought rationale in the prompt. Defaults to False.
-        few_shots: The number of few-shot examples to include in the prompt. Defaults to 0.
-    Returns:
-        - The final CEFR level predicted by the model in string labels (e.g., "A1", "B2", etc.).
-        - The rationale for the prediction provided by the model.
-        - The total token usage during the workflow run.
-        - The total time taken for the workflow run.
+def multi_agent_llm(
+    primary_model: BaseChatModel,
+    critique_model: BaseChatModel,
+    text: str,
+    cot: bool = False,
+    few_shots: int = 0,
+) -> tuple[str, str, int, float, str, str, str]:
+    """Two-agent placeholder flow (no RAG):
+    1) primary agent predicts CEFR
+    2) critique agent comments on primary output
     """
     now = time.time()
     text = text.strip()
     if not text:
         raise ValueError("Input text is empty.")
 
-    system_prompt = build_system_prompt_rag_only(dataset_key=DATASET_KEY, n=few_shots, cot=cot)
-    rag_context = get_rag_top_k(text, k=K)
-    rag_context_text = "\n\n".join([f"[{i+1}] {chunk}" for i, chunk in enumerate(rag_context)])
+    #### Primary agent step: predict CEFR level and rationale
+    primary_system_prompt = build_system_prompt_multi_agent(
+        dataset_key=DATASET_KEY,
+        n=few_shots,
+        cot=cot,
+    )
 
     token_usage = 0
 
-    conversation: List[HumanMessage | AIMessage | SystemMessage] = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=f"Text:\n{text}\n\nRetrieved context:\n{rag_context_text}"),
+    primary_conversation: List[HumanMessage | AIMessage | SystemMessage] = [
+        SystemMessage(content=primary_system_prompt),
+        HumanMessage(content=f"Text:\n{text}"),
+    ]
+    initial_message = primary_model.invoke(primary_conversation)
+    token_usage += _record_usage(initial_message)
+    initial_text = _message_text(initial_message)
+    initial_answer, initial_rationale = _extract_final_answer(initial_text)
+
+    #### Critique agent step: provide feedback on primary agent's rationale and prediction
+    critique_system_prompt = build_system_prompt_critique()
+
+    critique_conversation: List[HumanMessage | AIMessage | SystemMessage] = [
+        SystemMessage(content=critique_system_prompt),
+        HumanMessage(
+            content=(
+                f"Text:\n{text}\n\n"
+                f"First model rationale:\n{initial_rationale}\n\n"
+                f"First model prediction:\n{initial_answer}"
+            )
+        ),
+    ]
+    critique_message = critique_model.invoke(critique_conversation)
+    token_usage += _record_usage(critique_message)
+    critique_text = _message_text(critique_message)
+
+    #### Primary agent step again: revise CEFR level prediction based on critique feedback
+    refined_conversation: List[HumanMessage | AIMessage | SystemMessage] = primary_conversation + [
+        HumanMessage(
+            content= (
+                f"Critique of your rationale and prediction:\n{critique_text}\n\n"
+                f"Please provide a final CEFR level assessment for the input text, taking into account the critique's feedback. Be sure to provide a rationale for your final assessment as well."
+                f"Follow the same response format as before: <rationale>#### <CEFR level>"
+            )
+        ),
     ]
 
-    assistant_message = model.invoke(conversation)
-    token_usage += _record_usage(assistant_message)
-    assistant_text = _message_text(assistant_message)
+    final_message = primary_model.invoke(refined_conversation)
+    token_usage += _record_usage(final_message)
+    final_text = _message_text(final_message)
+    final_answer, final_rationale = _extract_final_answer(final_text)
 
-    answer, rationale = _extract_final_answer(assistant_text)
-    return answer, rationale, token_usage, time.time() - now
+    return final_answer, final_rationale, token_usage, time.time() - now, initial_answer, initial_rationale, critique_text
 
 
-def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, model_idx: int, cot: bool, few_shots: int) -> List[Dict[str, str | int | float]]:
+def evaluate_model_on_test_set(
+    test_df: pd.DataFrame,
+    primary_model: BaseChatModel,
+    critique_model: BaseChatModel,
+    model_idx: int,
+    cot: bool,
+    few_shots: int,
+) -> List[Dict[str, str | int | float]]:
     parallel_cfg = config.get("parallelism", {}) if isinstance(config, dict) else {}
     max_workers = int(parallel_cfg.get("max_workers", 1) or 1)
 
@@ -199,12 +186,21 @@ def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, mode
         row = test_df.iloc[i]
         text = str(row["text"])
         true_label = row["cefr_level"]
-        predicted_label, rationale, token_usage, elapsed_time = rag_llm(model, text, cot=cot, few_shots=few_shots)
+        predicted_label, rationale, token_usage, elapsed_time, initial_label, initial_rationale, critique = multi_agent_llm(
+            primary_model,
+            critique_model,
+            text,
+            cot=cot,
+            few_shots=few_shots,
+        )
         return {
             "text": text,
             "true_label": true_label,
             "predicted_label": predicted_label,
+            "initial_label": initial_label,
+            "initial_rationale": initial_rationale,
             "rationale": rationale,
+            "critique": critique,
             "token_usage": token_usage,
             "elapsed_time": elapsed_time,
         }
@@ -227,23 +223,24 @@ def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, mode
 
     results = [results_by_idx[i] for i in range(len(test_df))]
 
-    results_dir = Path(RESULTS_DIR)
-    results_dir.mkdir(parents=True, exist_ok=True)
-    out_path = results_dir / f"rag_model{model_idx}_CoT{cot}_Shot{few_shots}.json"
+    run_results_dir = Path(RESULTS_DIR)
+    run_results_dir.mkdir(parents=True, exist_ok=True)
+    out_path = run_results_dir / f"multi_agent_model{model_idx}_CoT{cot}_Shot{few_shots}.json"
     with out_path.open("w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     return results
 
 
 _RUN_FILE_RE = re.compile(
-    r"^rag_model(?P<model_idx>\d+)_CoT(?P<cot>True|False)_Shot(?P<shots>\d+)\.json$"
+    r"^multi_agent_model(?P<model_idx>\d+)_CoT(?P<cot>True|False)_Shot(?P<shots>\d+)\.json$"
 )
+
 
 def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
     results_dir = results_dir or Path(RESULTS_DIR)
     rows: List[Dict[str, str | int | float | bool]] = []
 
-    for file in sorted(results_dir.glob("rag_model*_CoT*_Shot*.json")):
+    for file in sorted(results_dir.glob("multi_agent_model*_CoT*_Shot*.json")):
         match = _RUN_FILE_RE.match(file.name)
         if not match:
             continue
@@ -299,7 +296,7 @@ def save_summary_to_file(
 ) -> Path:
     results_dir = results_dir or Path(RESULTS_DIR)
     results_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_path or (results_dir / "rag_results_summary.csv")
+    out_path = out_path or (results_dir / "multi_agent_results_summary.csv")
     df.to_csv(out_path, index=False)
     return out_path
 
@@ -308,8 +305,8 @@ def plot_model_size_summary(
     df: pd.DataFrame,
     results_dir: Path | None = None,
     out_dir: Path | None = None,
-    few_shots: Optional[int] = None):
-
+    few_shots: Optional[int] = None,
+):
     results_dir = results_dir or Path(RESULTS_DIR)
     out_dir = out_dir or Path(FIGURES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -408,7 +405,7 @@ def plot_model_size_summary(
     fig.tight_layout(rect=(0, 0, 1, 0.92))
 
     suffix = f"_shot{few_shots}" if few_shots is not None else ""
-    out_path = out_dir / f"rag_model_size_summary{suffix}.png"
+    out_path = out_dir / f"multi_agent_model_size_summary{suffix}.png"
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
 
@@ -431,7 +428,7 @@ def plot_model_size_summary(
             true_labels = []
             predicted_labels = []
             for _, row in subset_df.iterrows():
-                results_file = results_dir / f"rag_model{int(row['model_idx'])}_CoT{row['cot']}_Shot{int(row['few_shots'])}.json"
+                results_file = results_dir / f"multi_agent_model{int(row['model_idx'])}_CoT{row['cot']}_Shot{int(row['few_shots'])}.json"
                 if results_file.exists():
                     with results_file.open("r", encoding="utf-8") as f:
                         results = json.load(f)
@@ -463,10 +460,10 @@ def plot_model_size_summary(
                 ax.set_xlabel("")
 
     fig_cm.tight_layout()
-    out_path_cm = out_dir / f"rag_model_size_confusion_matrix{suffix}.png"
+    out_path_cm = out_dir / f"multi_agent_model_size_confusion_matrix{suffix}.png"
     fig_cm.savefig(out_path_cm, dpi=200)
     plt.close(fig_cm)
-    print(f"Saved RAG model size summary plots to: {out_dir}")
+    print(f"Saved multi-agent model size summary plots to: {out_dir}")
 
 
 def plot_prompt_summary(
@@ -585,7 +582,7 @@ def plot_prompt_summary(
     )
     fig.tight_layout(rect=(0, 0, 1, 0.92))
 
-    out_path = out_dir / "rag_prompt_analysis_by_shots.png"
+    out_path = out_dir / "multi_agent_prompt_analysis_by_shots.png"
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
 
@@ -607,7 +604,7 @@ def plot_prompt_summary(
             for col_i, shots in enumerate(shot_values):
                 ax = axes_cm[row_i, col_i]
 
-                results_file = results_dir / f"rag_model{model_idx_val}_CoT{cot_val}_Shot{shots}.json"
+                results_file = results_dir / f"multi_agent_model{model_idx_val}_CoT{cot_val}_Shot{shots}.json"
                 if results_file.exists():
                     with results_file.open("r", encoding="utf-8") as f:
                         results = json.load(f)
@@ -635,11 +632,11 @@ def plot_prompt_summary(
                     ax.set_title("")
 
         fig_cm.tight_layout()
-        out_path_cm = out_dir / f"rag_prompt_confusion_matrix_model{model_idx_val}.png"
+        out_path_cm = out_dir / f"multi_agent_prompt_confusion_matrix_model{model_idx_val}.png"
         fig_cm.savefig(out_path_cm, dpi=200)
         plt.close(fig_cm)
 
-    print(f"Saved RAG prompt analysis figure to: {out_path}")
+    print(f"Saved multi-agent prompt analysis figure to: {out_path}")
 
 
 def plot_single_run_confusion_matrix(
@@ -649,7 +646,6 @@ def plot_single_run_confusion_matrix(
     few_shots: int,
     out_dir: Path | None = None,
 ) -> Optional[Path]:
-    """Plot one confusion matrix for a single (model_idx, cot, few_shots) run."""
     out_dir = out_dir or Path(FIGURES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -668,7 +664,7 @@ def plot_single_run_confusion_matrix(
     disp.plot(ax=ax_cm, cmap="Blues", colorbar=False)
     ax_cm.set_title("")
 
-    out_path_cm = out_dir / f"rag_single_confusion_matrix_model{model_idx}_CoT{cot}_shot{few_shots}.png"
+    out_path_cm = out_dir / f"multi_agent_single_confusion_matrix_model{model_idx}_CoT{cot}_shot{few_shots}.png"
     fig_cm.tight_layout()
     fig_cm.savefig(out_path_cm, dpi=200)
     plt.close(fig_cm)
@@ -683,16 +679,17 @@ def model_size_analysis():
     params_comb = [(cot_val, few_shot_val) for cot_val in cot for few_shot_val in n_few_shot]
     model_indices = list(range(len(config["models"])))
     for model_idx in model_indices:
-        model = _build_model(model_idx)
+        primary_model = _build_model(model_idx)
+        critique_model = _build_model(model_idx)
         for cot_val, few_shot_val in params_comb:
-            print(f"Evaluating RAG model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
-            evaluate_model_on_test_set(test_df, model, model_idx, cot=cot_val, few_shots=few_shot_val)
+            print(f"Evaluating multi-agent model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
+            evaluate_model_on_test_set(test_df, primary_model, critique_model, model_idx, cot=cot_val, few_shots=few_shot_val)
 
     df = summarize_results()
     summary_path = save_summary_to_file(df=df)
-    print(f"Wrote RAG results summary CSV to: {summary_path}")
+    print(f"Wrote multi-agent results summary CSV to: {summary_path}")
     plot_model_size_summary(df=df)
-    print("Saved RAG model size analysis plots.")
+    print("Saved multi-agent model size analysis plots.")
 
 
 def prompt_analysis():
@@ -702,16 +699,17 @@ def prompt_analysis():
     params_comb = [(cot_val, few_shot_val) for cot_val in cot for few_shot_val in n_few_shot]
     model_indices = [2, 3]
     for model_idx in model_indices:
-        model = _build_model(model_idx)
+        primary_model = _build_model(model_idx)
+        critique_model = _build_model(model_idx)
         for cot_val, few_shot_val in params_comb:
-            print(f"Evaluating RAG model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
-            evaluate_model_on_test_set(test_df, model, model_idx, cot=cot_val, few_shots=few_shot_val)
+            print(f"Evaluating multi-agent model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
+            evaluate_model_on_test_set(test_df, primary_model, critique_model, model_idx, cot=cot_val, few_shots=few_shot_val)
 
     df = summarize_results()
     summary_path = save_summary_to_file(df=df)
-    print(f"Wrote RAG results summary CSV to: {summary_path}")
+    print(f"Wrote multi-agent results summary CSV to: {summary_path}")
     plot_prompt_summary(df=df, model_idx=model_indices)
-    print("Saved RAG prompt analysis plots.")
+    print("Saved multi-agent prompt analysis plots.")
 
 
 def main(mode: Optional[str] = None) -> None:
@@ -727,22 +725,15 @@ def main(mode: Optional[str] = None) -> None:
         raise ValueError(f"Unknown mode '{mode}'. Use 'model_size' or 'prompt'.")
 
 
-
 def run_best_model(model_idx: int, cot: bool, few_shots: int) -> None:
-    """
-    Run the best RAG model with specified parameters and print results.
-    Args:
-        model_idx: The index of the model to run (corresponding to config["models"]).
-        cot: Whether to use chain-of-thought rationale in the prompt.
-        few_shots: The number of few-shot examples to include in the prompt.
-    """
     _, test_df = load_data_split(dataset_key=DATASET_KEY)
-    model = _build_model(model_idx)
-    print(f"Evaluating best RAG model {model_idx} with cot={cot} and few_shots={few_shots}...")
-    results = evaluate_model_on_test_set(test_df, model, model_idx, cot=cot, few_shots=few_shots)
+    primary_model = _build_model(model_idx)
+    critique_model = _build_model(model_idx)
+    print(f"Evaluating best multi-agent model {model_idx} with cot={cot} and few_shots={few_shots}...")
+    results = evaluate_model_on_test_set(test_df, primary_model, critique_model, model_idx, cot=cot, few_shots=few_shots)
     accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(results)
     best_summary = {
-        "method": "rag",
+        "method": "multi_agent",
         "dataset_key": DATASET_KEY,
         "model_idx": model_idx,
         "model_name": str(config.get("models", [""])[model_idx]) if model_idx < len(config.get("models", [])) else "",
@@ -755,19 +746,18 @@ def run_best_model(model_idx: int, cot: bool, few_shots: int) -> None:
         "average_token_usage": avg_token_usage,
         "average_elapsed_time": avg_elapsed_time,
     }
-    best_summary_path = Path(RESULTS_DIR) / f"rag_best_model{model_idx}_CoT{cot}_Shot{few_shots}_summary.json"
+    best_summary_path = Path(RESULTS_DIR) / f"multi_agent_best_model{model_idx}_CoT{cot}_Shot{few_shots}_summary.json"
     with best_summary_path.open("w", encoding="utf-8") as f:
         json.dump(best_summary, f, ensure_ascii=False, indent=2)
 
     print(
-        "Best RAG model "
+        "Best multi-agent model "
         f"{model_idx} results - Accuracy: {accuracy:.4f}, Macro-F1: {macro_f1:.4f}, "
         f"Adjacent accuracy: {adjacent_accuracy:.4f}, Avg. token usage: {avg_token_usage:.2f}, "
         f"Avg. time: {avg_elapsed_time:.2f}s"
     )
     print(f"Saved best-run summary JSON to: {best_summary_path}")
     plot_single_run_confusion_matrix(results, model_idx=model_idx, cot=cot, few_shots=few_shots)
-    
 
 
 if __name__ == "__main__":

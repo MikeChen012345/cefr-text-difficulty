@@ -1,0 +1,50 @@
+[
+  {
+    "method": "llm",
+    "model_idx": 2,
+    "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+    "accuracy": 0.4033333333333333,
+    "macro_f1": 0.3795480436289968,
+    "adjacent_accuracy": 0.89,
+    "average_token_usage": 836.9166666666666,
+    "average_elapsed_time": 8.22372783501943,
+    "n_samples": 300,
+    "summary_file": "D:\\development\\CMSC25700\\cefr-text-difficulty\\results\\readme_en\\llm_best_model2_CoTTrue_Shot4_summary.json"
+  },
+  {
+    "method": "rag",
+    "model_idx": 2,
+    "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+    "accuracy": 0.37666666666666665,
+    "macro_f1": 0.34765777911497847,
+    "adjacent_accuracy": 0.8633333333333333,
+    "average_token_usage": 1238.0733333333333,
+    "average_elapsed_time": 11.129835423628489,
+    "n_samples": 300,
+    "summary_file": "D:\\development\\CMSC25700\\cefr-text-difficulty\\results\\readme_en\\rag_best_model2_CoTTrue_Shot4_summary.json"
+  },
+  {
+    "method": "multi_agent",
+    "model_idx": 2,
+    "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+    "accuracy": 0.4066666666666667,
+    "macro_f1": 0.40244027383783604,
+    "adjacent_accuracy": 0.8433333333333334,
+    "average_token_usage": 3342.016666666667,
+    "average_elapsed_time": 40.98730225086212,
+    "n_samples": 300,
+    "summary_file": "D:\\development\\CMSC25700\\cefr-text-difficulty\\results\\readme_en\\multi_agent_best_model2_CoTTrue_Shot4_summary.json"
+  },
+  {
+    "method": "tool",
+    "model_idx": 2,
+    "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+    "accuracy": 0.3333333333333333,
+    "macro_f1": 0.2677151822494863,
+    "adjacent_accuracy": 0.72,
+    "average_token_usage": 6558.256666666667,
+    "average_elapsed_time": 13.603998006184895,
+    "n_samples": 300,
+    "summary_file": "D:\\development\\CMSC25700\\cefr-text-difficulty\\results\\readme_en\\tool_best_model2_CoTTrue_Shot4_summary.json"
+  }
+]

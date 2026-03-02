@@ -1,0 +1,14 @@
+{
+  "method": "multi_agent",
+  "dataset_key": "cefr_sp_en",
+  "model_idx": 2,
+  "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "cot": true,
+  "few_shots": 4,
+  "n_samples": 300,
+  "accuracy": 0.28,
+  "macro_f1": 0.24930092793017777,
+  "adjacent_accuracy": 0.7533333333333333,
+  "average_token_usage": 3131.63,
+  "average_elapsed_time": 36.8844997493426
+}

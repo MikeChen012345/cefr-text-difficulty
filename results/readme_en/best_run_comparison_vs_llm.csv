@@ -1,0 +1,5 @@
+method,model_idx,model_name,accuracy,macro_f1,adjacent_accuracy,average_token_usage,average_elapsed_time,n_samples,summary_file
+llm,2,meta-llama/Meta-Llama-3.1-70B-Instruct,0.4033333333333333,0.3795480436289968,0.89,836.9166666666666,8.22372783501943,300,D:\development\CMSC25700\cefr-text-difficulty\results\readme_en\llm_best_model2_CoTTrue_Shot4_summary.json
+rag,2,meta-llama/Meta-Llama-3.1-70B-Instruct,0.37666666666666665,0.34765777911497847,0.8633333333333333,1238.0733333333333,11.129835423628489,300,D:\development\CMSC25700\cefr-text-difficulty\results\readme_en\rag_best_model2_CoTTrue_Shot4_summary.json
+multi_agent,2,meta-llama/Meta-Llama-3.1-70B-Instruct,0.4066666666666667,0.40244027383783604,0.8433333333333334,3342.016666666667,40.98730225086212,300,D:\development\CMSC25700\cefr-text-difficulty\results\readme_en\multi_agent_best_model2_CoTTrue_Shot4_summary.json
+tool,2,meta-llama/Meta-Llama-3.1-70B-Instruct,0.3333333333333333,0.2677151822494863,0.72,6558.256666666667,13.603998006184895,300,D:\development\CMSC25700\cefr-text-difficulty\results\readme_en\tool_best_model2_CoTTrue_Shot4_summary.json

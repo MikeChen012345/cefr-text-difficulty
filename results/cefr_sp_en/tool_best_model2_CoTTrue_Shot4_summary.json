@@ -1,0 +1,22 @@
+{
+  "method": "tool",
+  "dataset_key": "cefr_sp_en",
+  "model_idx": 2,
+  "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "cot": true,
+  "few_shots": 4,
+  "n_samples": 300,
+  "accuracy": 0.26666666666666666,
+  "macro_f1": 0.19512259924968411,
+  "adjacent_accuracy": 0.5366666666666666,
+  "average_token_usage": 6605.283333333334,
+  "average_elapsed_time": 12.76821583668391,
+  "average_total_tool_calls": 3.9,
+  "average_tool_calls_by_tool": {
+    "analyze_vocabulary": 0.9866666666666667,
+    "analyze_grammar": 0.97,
+    "analyze_cohesion": 0.97,
+    "analyze_task_achievement": 0.97,
+    "compose_cefr_features": 0.0033333333333333335
+  }
+}

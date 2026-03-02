@@ -1,0 +1,2 @@
+model_idx,model_name,cot,few_shots,accuracy,macro_f1,adjacent_accuracy,average_token_usage,average_elapsed_time,average_total_tool_calls,average_tool_calls__analyze_vocabulary,average_tool_calls__analyze_grammar,average_tool_calls__analyze_cohesion,average_tool_calls__analyze_task_achievement,average_tool_calls__compose_cefr_features
+2,meta-llama/Meta-Llama-3.1-70B-Instruct,True,4,0.3333333333333333,0.2677151822494863,0.72,6558.256666666667,13.603998006184895,3.6533333333333338,0.9433333333333334,0.8933333333333333,0.8966666666666666,0.8933333333333333,0.02666666666666667

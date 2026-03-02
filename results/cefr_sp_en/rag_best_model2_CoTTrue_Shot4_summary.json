@@ -1,0 +1,14 @@
+{
+  "method": "rag",
+  "dataset_key": "cefr_sp_en",
+  "model_idx": 2,
+  "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "cot": true,
+  "few_shots": 4,
+  "n_samples": 300,
+  "accuracy": 0.35,
+  "macro_f1": 0.32009911700893406,
+  "adjacent_accuracy": 0.8533333333333334,
+  "average_token_usage": 1100.7966666666666,
+  "average_elapsed_time": 9.420349858601888
+}

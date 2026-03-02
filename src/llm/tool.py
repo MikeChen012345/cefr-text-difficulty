@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-import warnings
-warnings.filterwarnings(action="ignore", message="Protobuf gencode version")
-warnings.filterwarnings(action="ignore", message=r".*embeddings\.position_ids.*UNEXPECTED.*")
-warnings.filterwarnings(action="ignore", message=r".*UNEXPECTED.*embeddings\.position_ids.*")
-
 import yaml
 import sys
 import os
@@ -27,9 +22,6 @@ from typing import Dict, List, Tuple, Optional
 import time
 import json
 import importlib.util
-import io
-import contextlib
-from functools import lru_cache
 
 import pandas as pd
 import numpy as np
@@ -39,54 +31,38 @@ from tqdm import tqdm
 from pathlib import Path
 import re
 
-try:
-    from transformers.utils import logging as hf_logging
-    hf_logging.set_verbosity_error()
-except Exception:
-    pass
-
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer
 from langchain.chat_models import init_chat_model, BaseChatModel
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.tools import tool
 
 from data_loader import load_data_split
-from prompt import build_system_prompt_rag_only
+from prompt import build_system_prompt_tool
 from config import results_dir, figures_dir
 
 logger = logging.getLogger(__name__)
 
-try:
-    from llm.llm import _record_usage, _message_text, _extract_final_answer, _compute_metrics
-except ModuleNotFoundError:
-    llm_file = Path(__file__).with_name("llm.py")
-    llm_spec = importlib.util.spec_from_file_location("llm_helpers_module", llm_file)
-    if llm_spec is None or llm_spec.loader is None:
-        raise ModuleNotFoundError(f"Unable to load helper functions from {llm_file}")
-    llm_module = importlib.util.module_from_spec(llm_spec)
-    llm_spec.loader.exec_module(llm_module)
-    _record_usage = llm_module._record_usage
-    _message_text = llm_module._message_text
-    _extract_final_answer = llm_module._extract_final_answer
-    _compute_metrics = llm_module._compute_metrics
+llm_file = Path(__file__).with_name("llm.py")
+llm_spec = importlib.util.spec_from_file_location("llm_helpers_module", llm_file)
+if llm_spec is None or llm_spec.loader is None:
+    raise ModuleNotFoundError(f"Unable to load helper functions from {llm_file}")
+llm_module = importlib.util.module_from_spec(llm_spec)
+llm_spec.loader.exec_module(llm_module)
+_record_usage = llm_module._record_usage
+_message_text = llm_module._message_text
+_extract_final_answer = llm_module._extract_final_answer
+_compute_metrics = llm_module._compute_metrics
 
-if not config.get("api_key") or not config.get("api_key").strip(): # None or empty string
+if not config.get("api_key") or not config.get("api_key").strip():
     logger.warning("No API key found in config.yaml; will attempt to retrieve from inference service")
-    from utils.inference_auth_token import get_access_token # for inference service
+    from utils.inference_auth_token import get_access_token
     config["api_key"] = get_access_token()
-    config["model_provider"] = "openai" # openai-compatible API
+    config["model_provider"] = "openai"
 
-# number of top results to return for rag
-K = 10
-
-# Set the dataset to use
-DATASET_KEY = "cefr_sp_en" # "readme_en" # 
-
-# Setup directories for results and figures based on dataset
+DATASET_KEY = "readme_en" # "cefr_sp_en" # 
 RESULTS_DIR = results_dir(DATASET_KEY)
 FIGURES_DIR = figures_dir(DATASET_KEY)
 
@@ -107,35 +83,137 @@ def _extract_model_size(model_name: str) -> Optional[float]:
     return None
 
 
-@lru_cache(maxsize=1)
-def _get_qdrant_client() -> QdrantClient:
-    return QdrantClient(url="http://localhost:13031")
+def _split_sentences(text: str) -> List[str]:
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    return [s.strip() for s in sentences if s and s.strip()]
 
 
-@lru_cache(maxsize=1)
-def _get_embedding_model() -> SentenceTransformer:
-    # Silence one-time model loading logs that can disrupt tqdm output.
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        model = SentenceTransformer("sentence-transformers/paraphrase-albert-small-v2")
-    return model
+def _tokenize_words(text: str) -> List[str]:
+    return re.findall(r"[A-Za-z']+", text.lower())
 
 
-def get_rag_top_k(query: str, k: int = K) -> List[Tuple[str, str]]:
-    client = _get_qdrant_client()
-    embedding_model = _get_embedding_model()
+@tool
+def analyze_vocabulary(text: str) -> Dict[str, float | int]:
+    """Analyze vocabulary range and complexity in the input text."""
+    words = _tokenize_words(text)
+    if not words:
+        return {
+            "word_count": 0,
+            "unique_word_count": 0,
+            "type_token_ratio": 0.0,
+            "avg_word_length": 0.0,
+            "long_word_ratio": 0.0,
+        }
 
-    query_vector = embedding_model.encode([query], show_progress_bar=False)[0].tolist()
-    points = client.query_points(
-        collection_name=DATASET_KEY,
-        query=query_vector,
-        limit=k,
-        with_payload=True,
-    ).points
-    results: List[Tuple[str, str]] = []
-    for point in points:
-        payload = point.payload or {}
-        results.append((str(payload.get("text", "")), str(payload.get("cefr_level", ""))))
-    return results
+    unique_words = set(words)
+    long_words = [w for w in words if len(w) >= 7]
+    return {
+        "word_count": len(words),
+        "unique_word_count": len(unique_words),
+        "type_token_ratio": round(len(unique_words) / len(words), 4),
+        "avg_word_length": round(float(np.mean([len(w) for w in words])), 3),
+        "long_word_ratio": round(len(long_words) / len(words), 4),
+    }
+
+
+@tool
+def analyze_grammar(text: str) -> Dict[str, float | int]:
+    """Estimate grammatical variety/accuracy using lightweight heuristics."""
+    sentences = _split_sentences(text)
+    words = _tokenize_words(text)
+    if not sentences:
+        return {
+            "sentence_count": 0,
+            "avg_sentence_length": 0.0,
+            "sentence_length_std": 0.0,
+            "capitalization_issues": 0,
+            "punctuation_issues": 0,
+        }
+
+    sentence_word_counts = [len(_tokenize_words(s)) for s in sentences]
+    capitalization_issues = sum(1 for s in sentences if s and not s[0].isupper())
+    punctuation_issues = len(re.findall(r"[!?.,]{2,}", text))
+    if text.strip() and text.strip()[-1] not in ".!?":
+        punctuation_issues += 1
+
+    return {
+        "sentence_count": len(sentences),
+        "avg_sentence_length": round(float(np.mean(sentence_word_counts)), 3),
+        "sentence_length_std": round(float(np.std(sentence_word_counts)), 3),
+        "capitalization_issues": capitalization_issues,
+        "punctuation_issues": punctuation_issues,
+        "approx_clause_markers": sum(words.count(x) for x in ["that", "which", "who", "because", "although", "while"]),
+    }
+
+
+@tool
+def analyze_cohesion(text: str) -> Dict[str, float | int]:
+    """Analyze cohesion/coherence signals (connectors and local lexical overlap)."""
+    sentences = _split_sentences(text)
+    words = _tokenize_words(text)
+    markers = {
+        "however", "therefore", "moreover", "furthermore", "first", "second", "finally",
+        "because", "although", "while", "then", "thus", "for example", "in addition",
+    }
+
+    marker_count = sum(1 for w in words if w in markers)
+    pronoun_count = sum(1 for w in words if w in {"he", "she", "it", "they", "this", "that", "these", "those"})
+
+    overlaps: List[float] = []
+    for i in range(len(sentences) - 1):
+        a = set(_tokenize_words(sentences[i]))
+        b = set(_tokenize_words(sentences[i + 1]))
+        union = len(a | b)
+        overlaps.append((len(a & b) / union) if union else 0.0)
+
+    return {
+        "sentence_count": len(sentences),
+        "discourse_marker_count": marker_count,
+        "discourse_marker_density": round(marker_count / max(1, len(sentences)), 4),
+        "adjacent_sentence_overlap": round(float(np.mean(overlaps)) if overlaps else 0.0, 4),
+        "pronoun_count": pronoun_count,
+    }
+
+
+@tool
+def analyze_task_achievement(text: str) -> Dict[str, float | int | str]:
+    """Approximate task achievement: completeness, organization, and register signals."""
+    sentences = _split_sentences(text)
+    words = _tokenize_words(text)
+    paragraphs = [p for p in text.split("\n\n") if p.strip()]
+
+    contractions = re.findall(r"\b\w+'(t|re|ve|ll|d|m|s)\b", text.lower()) # match can't, we're, I've, I'll etc.
+    avg_sentence_len = float(np.mean([len(_tokenize_words(s)) for s in sentences])) if sentences else 0.0
+
+    return {
+        "word_count": len(words),
+        "sentence_count": len(sentences),
+        "paragraph_count": len(paragraphs),
+        "avg_sentence_length": round(avg_sentence_len, 3),
+        "contraction_count": len(contractions),
+        "length_band": "short" if len(words) < 60 else ("medium" if len(words) < 180 else "long"),
+    }
+
+
+@tool
+def compose_cefr_features(text: str) -> Dict[str, Dict[str, float | int]]:
+    """Return all CEFR-oriented feature analyses together in one call."""
+    return {
+        "vocabulary": analyze_vocabulary.invoke({"text": text}),
+        "grammar": analyze_grammar.invoke({"text": text}),
+        "cohesion": analyze_cohesion.invoke({"text": text}),
+        "task_achievement": analyze_task_achievement.invoke({"text": text}),
+    }
+
+
+TOOLS = [
+    analyze_vocabulary,
+    analyze_grammar,
+    analyze_cohesion,
+    analyze_task_achievement,
+    compose_cefr_features,
+]
+TOOL_REGISTRY = {tool_obj.name: tool_obj for tool_obj in TOOLS}
 
 
 def _build_model(model_idx: int) -> BaseChatModel:
@@ -153,53 +231,69 @@ def _build_model(model_idx: int) -> BaseChatModel:
     )
 
 
-def rag_llm(model: BaseChatModel, text: str, cot: bool = False, few_shots: int = 0) -> tuple[str, str, int, float]:
-    """
-    Run a single-turn CEFR level prediction using an LLM with RAG retrieval.
-    Args:
-        model: The LLM instance to use for inference.
-        text: The input text to rate the CEFR level of.
-        cot: Whether to include a chain-of-thought rationale in the prompt. Defaults to False.
-        few_shots: The number of few-shot examples to include in the prompt. Defaults to 0.
-    Returns:
-        - The final CEFR level predicted by the model in string labels (e.g., "A1", "B2", etc.).
-        - The rationale for the prediction provided by the model.
-        - The total token usage during the workflow run.
-        - The total time taken for the workflow run.
-    """
+def _invoke_with_tools(model: BaseChatModel, system_prompt: str, text: str) -> tuple[str, int, Dict[str, int]]:
+    tool_model = model.bind_tools(TOOLS)
+    messages: List[HumanMessage | AIMessage | SystemMessage | ToolMessage] = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=f"Text:\n{text}\n\n"),
+    ]
+    token_usage = 0
+    tool_call_counts: Dict[str, int] = {tool_obj.name: 0 for tool_obj in TOOLS}
+
+    for _ in range(6):
+        ai_message = tool_model.invoke(messages)
+        token_usage += _record_usage(ai_message)
+        messages.append(ai_message)
+
+        tool_calls = getattr(ai_message, "tool_calls", None) or []
+        if not tool_calls:
+            return _message_text(ai_message), token_usage, tool_call_counts
+
+        for tool_call in tool_calls:
+            tool_name = tool_call.get("name", "")
+            args = tool_call.get("args", {}) or {}
+            tool_call_id = tool_call.get("id")
+            if tool_name in tool_call_counts:
+                tool_call_counts[tool_name] += 1
+            if tool_name not in TOOL_REGISTRY:
+                tool_output = {"error": f"Unknown tool: {tool_name}"}
+            else:
+                try:
+                    tool_output = TOOL_REGISTRY[tool_name].invoke(args)
+                except Exception as exc:
+                    tool_output = {"error": str(exc)}
+            messages.append(
+                ToolMessage(
+                    content=json.dumps(tool_output, ensure_ascii=False),
+                    tool_call_id=tool_call_id,
+                )
+            )
+
+    return _message_text(messages[-1]), token_usage, tool_call_counts
+
+
+def tool_llm(model: BaseChatModel, text: str, cot: bool = False, few_shots: int = 0) -> tuple[str, str, int, float, Dict[str, int]]:
     now = time.time()
     text = text.strip()
     if not text:
         raise ValueError("Input text is empty.")
 
-    system_prompt = build_system_prompt_rag_only(dataset_key=DATASET_KEY, n=few_shots, cot=cot)
-    rag_context = get_rag_top_k(text, k=K)
-    rag_context_text = "\n\n".join([f"[{i+1}] {chunk}" for i, chunk in enumerate(rag_context)])
+    system_prompt = build_system_prompt_tool(dataset_key=DATASET_KEY, n=few_shots, cot=cot)
 
-    token_usage = 0
-
-    conversation: List[HumanMessage | AIMessage | SystemMessage] = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=f"Text:\n{text}\n\nRetrieved context:\n{rag_context_text}"),
-    ]
-
-    assistant_message = model.invoke(conversation)
-    token_usage += _record_usage(assistant_message)
-    assistant_text = _message_text(assistant_message)
-
+    assistant_text, token_usage, tool_call_counts = _invoke_with_tools(model, system_prompt, text)
     answer, rationale = _extract_final_answer(assistant_text)
-    return answer, rationale, token_usage, time.time() - now
+    return answer, rationale, token_usage, time.time() - now, tool_call_counts
 
 
-def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, model_idx: int, cot: bool, few_shots: int) -> List[Dict[str, str | int | float]]:
+def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, model_idx: int, cot: bool, few_shots: int) -> List[Dict[str, object]]:
     parallel_cfg = config.get("parallelism", {}) if isinstance(config, dict) else {}
     max_workers = int(parallel_cfg.get("max_workers", 1) or 1)
 
-    def _eval_one(i: int) -> Dict[str, str | int | float]:
+    def _eval_one(i: int) -> Dict[str, object]:
         row = test_df.iloc[i]
         text = str(row["text"])
         true_label = row["cefr_level"]
-        predicted_label, rationale, token_usage, elapsed_time = rag_llm(model, text, cot=cot, few_shots=few_shots)
+        predicted_label, rationale, token_usage, elapsed_time, tool_call_counts = tool_llm(model, text, cot=cot, few_shots=few_shots)
         return {
             "text": text,
             "true_label": true_label,
@@ -207,9 +301,11 @@ def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, mode
             "rationale": rationale,
             "token_usage": token_usage,
             "elapsed_time": elapsed_time,
+            "tool_call_counts": tool_call_counts,
+            "total_tool_calls": int(sum(tool_call_counts.values())),
         }
 
-    results_by_idx: Dict[int, Dict[str, str | int | float]] = {}
+    results_by_idx: Dict[int, Dict[str, object]] = {}
     if max_workers <= 1:
         for i in tqdm(range(len(test_df)), desc="Evaluating"):
             results_by_idx[i] = _eval_one(i)
@@ -227,23 +323,70 @@ def evaluate_model_on_test_set(test_df: pd.DataFrame, model: BaseChatModel, mode
 
     results = [results_by_idx[i] for i in range(len(test_df))]
 
-    results_dir = Path(RESULTS_DIR)
-    results_dir.mkdir(parents=True, exist_ok=True)
-    out_path = results_dir / f"rag_model{model_idx}_CoT{cot}_Shot{few_shots}.json"
+    run_results_dir = Path(RESULTS_DIR)
+    run_results_dir.mkdir(parents=True, exist_ok=True)
+    out_path = run_results_dir / f"tool_model{model_idx}_CoT{cot}_Shot{few_shots}.json"
     with out_path.open("w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     return results
 
 
 _RUN_FILE_RE = re.compile(
-    r"^rag_model(?P<model_idx>\d+)_CoT(?P<cot>True|False)_Shot(?P<shots>\d+)\.json$"
+    r"^tool_model(?P<model_idx>\d+)_CoT(?P<cot>True|False)_Shot(?P<shots>\d+)\.json$"
 )
+
+
+def _results_for_metrics(results: List[Dict[str, object]]) -> List[Dict[str, str | int | float]]:
+    return [
+        {
+            "true_label": str(r.get("true_label", "")),
+            "predicted_label": str(r.get("predicted_label", "")),
+            "token_usage": _safe_float(r.get("token_usage", 0), default=0.0),
+            "elapsed_time": _safe_float(r.get("elapsed_time", 0), default=0.0),
+        }
+        for r in results
+    ]
+
+
+def _safe_float(value: object, default: float = 0.0) -> float:
+    try:
+        if isinstance(value, bool):
+            return float(value)
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            return float(value.strip())
+        return default
+    except (TypeError, ValueError):
+        return default
+
+
+def _average_tool_calls_by_tool(results: List[Dict[str, object]]) -> Dict[str, float]:
+    tool_names = [tool_obj.name for tool_obj in TOOLS]
+    total_samples = len(results)
+    if total_samples == 0:
+        return {tool_name: 0.0 for tool_name in tool_names}
+
+    totals: Dict[str, float] = {tool_name: 0.0 for tool_name in tool_names}
+    for row in results:
+        raw_counts = row.get("tool_call_counts", {})
+        counts = raw_counts if isinstance(raw_counts, dict) else {}
+        for tool_name in tool_names:
+            raw_val = counts.get(tool_name, 0)
+            try:
+                totals[tool_name] += float(raw_val)
+            except (TypeError, ValueError):
+                continue
+
+    return {tool_name: totals[tool_name] / total_samples for tool_name in tool_names}
+
 
 def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
     results_dir = results_dir or Path(RESULTS_DIR)
+    tool_names = [tool_obj.name for tool_obj in TOOLS]
     rows: List[Dict[str, str | int | float | bool]] = []
 
-    for file in sorted(results_dir.glob("rag_model*_CoT*_Shot*.json")):
+    for file in sorted(results_dir.glob("tool_model*_CoT*_Shot*.json")):
         match = _RUN_FILE_RE.match(file.name)
         if not match:
             continue
@@ -255,7 +398,10 @@ def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
         with file.open("r", encoding="utf-8") as f:
             results = json.load(f)
 
-        accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(results)
+        metrics_input = _results_for_metrics(results)
+        accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(metrics_input)
+        avg_tool_calls_by_tool = _average_tool_calls_by_tool(results)
+        avg_total_tool_calls = float(sum(avg_tool_calls_by_tool.values()))
         model_name = ""
         try:
             model_name = config.get("models", [])[model_idx]
@@ -273,23 +419,27 @@ def summarize_results(results_dir: Path | None = None) -> pd.DataFrame:
                 "adjacent_accuracy": adjacent_accuracy,
                 "average_token_usage": avg_token_usage,
                 "average_elapsed_time": avg_elapsed_time,
+                "average_total_tool_calls": avg_total_tool_calls,
             }
         )
 
-    return pd.DataFrame(
-        rows,
-        columns=[
-            "model_idx",
-            "model_name",
-            "cot",
-            "few_shots",
-            "accuracy",
-            "macro_f1",
-            "adjacent_accuracy",
-            "average_token_usage",
-            "average_elapsed_time",
-        ],
-    )
+        for tool_name in tool_names:
+            rows[-1][f"average_tool_calls__{tool_name}"] = avg_tool_calls_by_tool.get(tool_name, 0.0)
+
+    columns = [
+        "model_idx",
+        "model_name",
+        "cot",
+        "few_shots",
+        "accuracy",
+        "macro_f1",
+        "adjacent_accuracy",
+        "average_token_usage",
+        "average_elapsed_time",
+        "average_total_tool_calls",
+    ] + [f"average_tool_calls__{tool_name}" for tool_name in tool_names]
+
+    return pd.DataFrame(rows, columns=columns)
 
 
 def save_summary_to_file(
@@ -299,7 +449,7 @@ def save_summary_to_file(
 ) -> Path:
     results_dir = results_dir or Path(RESULTS_DIR)
     results_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_path or (results_dir / "rag_results_summary.csv")
+    out_path = out_path or (results_dir / "tool_results_summary.csv")
     df.to_csv(out_path, index=False)
     return out_path
 
@@ -308,8 +458,8 @@ def plot_model_size_summary(
     df: pd.DataFrame,
     results_dir: Path | None = None,
     out_dir: Path | None = None,
-    few_shots: Optional[int] = None):
-
+    few_shots: Optional[int] = None,
+):
     results_dir = results_dir or Path(RESULTS_DIR)
     out_dir = out_dir or Path(FIGURES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -408,7 +558,7 @@ def plot_model_size_summary(
     fig.tight_layout(rect=(0, 0, 1, 0.92))
 
     suffix = f"_shot{few_shots}" if few_shots is not None else ""
-    out_path = out_dir / f"rag_model_size_summary{suffix}.png"
+    out_path = out_dir / f"tool_model_size_summary{suffix}.png"
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
 
@@ -431,7 +581,7 @@ def plot_model_size_summary(
             true_labels = []
             predicted_labels = []
             for _, row in subset_df.iterrows():
-                results_file = results_dir / f"rag_model{int(row['model_idx'])}_CoT{row['cot']}_Shot{int(row['few_shots'])}.json"
+                results_file = results_dir / f"tool_model{int(row['model_idx'])}_CoT{row['cot']}_Shot{int(row['few_shots'])}.json"
                 if results_file.exists():
                     with results_file.open("r", encoding="utf-8") as f:
                         results = json.load(f)
@@ -463,10 +613,10 @@ def plot_model_size_summary(
                 ax.set_xlabel("")
 
     fig_cm.tight_layout()
-    out_path_cm = out_dir / f"rag_model_size_confusion_matrix{suffix}.png"
+    out_path_cm = out_dir / f"tool_model_size_confusion_matrix{suffix}.png"
     fig_cm.savefig(out_path_cm, dpi=200)
     plt.close(fig_cm)
-    print(f"Saved RAG model size summary plots to: {out_dir}")
+    print(f"Saved tool-enabled model size summary plots to: {out_dir}")
 
 
 def plot_prompt_summary(
@@ -585,7 +735,7 @@ def plot_prompt_summary(
     )
     fig.tight_layout(rect=(0, 0, 1, 0.92))
 
-    out_path = out_dir / "rag_prompt_analysis_by_shots.png"
+    out_path = out_dir / "tool_prompt_analysis_by_shots.png"
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
 
@@ -607,7 +757,7 @@ def plot_prompt_summary(
             for col_i, shots in enumerate(shot_values):
                 ax = axes_cm[row_i, col_i]
 
-                results_file = results_dir / f"rag_model{model_idx_val}_CoT{cot_val}_Shot{shots}.json"
+                results_file = results_dir / f"tool_model{model_idx_val}_CoT{cot_val}_Shot{shots}.json"
                 if results_file.exists():
                     with results_file.open("r", encoding="utf-8") as f:
                         results = json.load(f)
@@ -635,21 +785,20 @@ def plot_prompt_summary(
                     ax.set_title("")
 
         fig_cm.tight_layout()
-        out_path_cm = out_dir / f"rag_prompt_confusion_matrix_model{model_idx_val}.png"
+        out_path_cm = out_dir / f"tool_prompt_confusion_matrix_model{model_idx_val}.png"
         fig_cm.savefig(out_path_cm, dpi=200)
         plt.close(fig_cm)
 
-    print(f"Saved RAG prompt analysis figure to: {out_path}")
+    print(f"Saved tool-enabled prompt analysis figure to: {out_path}")
 
 
 def plot_single_run_confusion_matrix(
-    results: List[Dict[str, str | int | float]],
+    results: List[Dict[str, object]],
     model_idx: int,
     cot: bool,
     few_shots: int,
     out_dir: Path | None = None,
 ) -> Optional[Path]:
-    """Plot one confusion matrix for a single (model_idx, cot, few_shots) run."""
     out_dir = out_dir or Path(FIGURES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -668,7 +817,7 @@ def plot_single_run_confusion_matrix(
     disp.plot(ax=ax_cm, cmap="Blues", colorbar=False)
     ax_cm.set_title("")
 
-    out_path_cm = out_dir / f"rag_single_confusion_matrix_model{model_idx}_CoT{cot}_shot{few_shots}.png"
+    out_path_cm = out_dir / f"tool_single_confusion_matrix_model{model_idx}_CoT{cot}_shot{few_shots}.png"
     fig_cm.tight_layout()
     fig_cm.savefig(out_path_cm, dpi=200)
     plt.close(fig_cm)
@@ -685,14 +834,14 @@ def model_size_analysis():
     for model_idx in model_indices:
         model = _build_model(model_idx)
         for cot_val, few_shot_val in params_comb:
-            print(f"Evaluating RAG model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
+            print(f"Evaluating tool-enabled model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
             evaluate_model_on_test_set(test_df, model, model_idx, cot=cot_val, few_shots=few_shot_val)
 
     df = summarize_results()
     summary_path = save_summary_to_file(df=df)
-    print(f"Wrote RAG results summary CSV to: {summary_path}")
+    print(f"Wrote tool-enabled results summary CSV to: {summary_path}")
     plot_model_size_summary(df=df)
-    print("Saved RAG model size analysis plots.")
+    print("Saved tool-enabled model size analysis plots.")
 
 
 def prompt_analysis():
@@ -704,14 +853,14 @@ def prompt_analysis():
     for model_idx in model_indices:
         model = _build_model(model_idx)
         for cot_val, few_shot_val in params_comb:
-            print(f"Evaluating RAG model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
+            print(f"Evaluating tool-enabled model {model_idx} with cot={cot_val} and few_shots={few_shot_val}...")
             evaluate_model_on_test_set(test_df, model, model_idx, cot=cot_val, few_shots=few_shot_val)
 
     df = summarize_results()
     summary_path = save_summary_to_file(df=df)
-    print(f"Wrote RAG results summary CSV to: {summary_path}")
+    print(f"Wrote tool-enabled results summary CSV to: {summary_path}")
     plot_prompt_summary(df=df, model_idx=model_indices)
-    print("Saved RAG prompt analysis plots.")
+    print("Saved tool-enabled prompt analysis plots.")
 
 
 def main(mode: Optional[str] = None) -> None:
@@ -727,22 +876,17 @@ def main(mode: Optional[str] = None) -> None:
         raise ValueError(f"Unknown mode '{mode}'. Use 'model_size' or 'prompt'.")
 
 
-
 def run_best_model(model_idx: int, cot: bool, few_shots: int) -> None:
-    """
-    Run the best RAG model with specified parameters and print results.
-    Args:
-        model_idx: The index of the model to run (corresponding to config["models"]).
-        cot: Whether to use chain-of-thought rationale in the prompt.
-        few_shots: The number of few-shot examples to include in the prompt.
-    """
     _, test_df = load_data_split(dataset_key=DATASET_KEY)
     model = _build_model(model_idx)
-    print(f"Evaluating best RAG model {model_idx} with cot={cot} and few_shots={few_shots}...")
+    print(f"Evaluating best tool-enabled model {model_idx} with cot={cot} and few_shots={few_shots}...")
     results = evaluate_model_on_test_set(test_df, model, model_idx, cot=cot, few_shots=few_shots)
-    accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(results)
+    metrics_input = _results_for_metrics(results)
+    accuracy, macro_f1, adjacent_accuracy, avg_token_usage, avg_elapsed_time = _compute_metrics(metrics_input)
+    avg_tool_calls_by_tool = _average_tool_calls_by_tool(results)
+    avg_total_tool_calls = float(sum(avg_tool_calls_by_tool.values()))
     best_summary = {
-        "method": "rag",
+        "method": "tool",
         "dataset_key": DATASET_KEY,
         "model_idx": model_idx,
         "model_name": str(config.get("models", [""])[model_idx]) if model_idx < len(config.get("models", [])) else "",
@@ -754,20 +898,21 @@ def run_best_model(model_idx: int, cot: bool, few_shots: int) -> None:
         "adjacent_accuracy": adjacent_accuracy,
         "average_token_usage": avg_token_usage,
         "average_elapsed_time": avg_elapsed_time,
+        "average_total_tool_calls": avg_total_tool_calls,
+        "average_tool_calls_by_tool": avg_tool_calls_by_tool,
     }
-    best_summary_path = Path(RESULTS_DIR) / f"rag_best_model{model_idx}_CoT{cot}_Shot{few_shots}_summary.json"
+    best_summary_path = Path(RESULTS_DIR) / f"tool_best_model{model_idx}_CoT{cot}_Shot{few_shots}_summary.json"
     with best_summary_path.open("w", encoding="utf-8") as f:
         json.dump(best_summary, f, ensure_ascii=False, indent=2)
 
     print(
-        "Best RAG model "
+        "Best tool-enabled model "
         f"{model_idx} results - Accuracy: {accuracy:.4f}, Macro-F1: {macro_f1:.4f}, "
         f"Adjacent accuracy: {adjacent_accuracy:.4f}, Avg. token usage: {avg_token_usage:.2f}, "
-        f"Avg. time: {avg_elapsed_time:.2f}s"
+        f"Avg. time: {avg_elapsed_time:.2f}s, Avg. tool calls: {avg_total_tool_calls:.2f}"
     )
     print(f"Saved best-run summary JSON to: {best_summary_path}")
     plot_single_run_confusion_matrix(results, model_idx=model_idx, cot=cot, few_shots=few_shots)
-    
 
 
 if __name__ == "__main__":
@@ -775,13 +920,13 @@ if __name__ == "__main__":
     best_model_idx = 2
     best_model_cot = True
     best_model_few_shots = 4
-    
+
     run_best_model(model_idx=best_model_idx, cot=best_model_cot, few_shots=best_model_few_shots)
 
     # To summarize results from previous runs without re-running analyses, uncomment below:
-    # df = summarize_results()
-    # save_summary_to_file(df=df)
-    # print(f"Summarized results: \n{df}")
+    df = summarize_results()
+    save_summary_to_file(df=df)
+    print(f"Summarized results: \n{df}")
 
     # Batch run analyses (uncomment to run full analyses):
     # main(mode="model_size")

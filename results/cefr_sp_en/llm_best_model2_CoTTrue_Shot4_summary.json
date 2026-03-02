@@ -1,0 +1,14 @@
+{
+  "method": "llm",
+  "dataset_key": "cefr_sp_en",
+  "model_idx": 2,
+  "model_name": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "cot": true,
+  "few_shots": 4,
+  "n_samples": 300,
+  "accuracy": 0.31333333333333335,
+  "macro_f1": 0.274409296649632,
+  "adjacent_accuracy": 0.77,
+  "average_token_usage": 761.74,
+  "average_elapsed_time": 7.080481488704681
+}

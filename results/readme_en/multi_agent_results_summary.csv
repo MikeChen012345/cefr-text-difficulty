@@ -1,0 +1,2 @@
+model_idx,model_name,cot,few_shots,accuracy,macro_f1,adjacent_accuracy,average_token_usage,average_elapsed_time
+2,meta-llama/Meta-Llama-3.1-70B-Instruct,True,4,0.4066666666666667,0.40244027383783604,0.8433333333333334,3342.016666666667,40.98730225086212
