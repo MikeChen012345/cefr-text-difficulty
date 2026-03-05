@@ -390,6 +390,197 @@ def run_cross_task_bert(train_key: str, test_key: str):
     return res
 
 
+def train_xgb_and_get_gain_importance(X_train, y_train, feature_names):
+    xgb_device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = xgb.XGBClassifier(
+        n_estimators=300, max_depth=6, learning_rate=0.05,
+        subsample=0.9, colsample_bytree=0.9,
+        random_state=SEED, eval_metric="mlogloss",
+        tree_method="hist", device=xgb_device,
+    )
+    model.fit(X_train, y_train)
+
+    # Gain importance (sklearn wrapper gives feature_importances_, but get_score is clearer)
+    booster = model.get_booster()
+    score = booster.get_score(importance_type="gain")  # dict: {'f0': val, ...}
+
+    gains = np.zeros(len(feature_names), dtype=float)
+    for i in range(len(feature_names)):
+        key = f"f{i}"
+        gains[i] = score.get(key, 0.0)
+
+    imp_df = pd.DataFrame({"feature": feature_names, "gain": gains})
+    imp_df = imp_df.sort_values("gain", ascending=False).reset_index(drop=True)
+    return model, imp_df
+
+
+def shap_importance_on_target(model, X_target, feature_names, max_samples=2000):
+    """
+    Computes mean(|SHAP|) per feature on target examples.
+    Uses TreeExplainer. Subsamples for speed.
+    """
+    try:
+        import shap
+    except ImportError as e:
+        raise ImportError("Install shap: pip install shap") from e
+
+    if X_target.shape[0] > max_samples:
+        rng = np.random.default_rng(SEED)
+        idx = rng.choice(X_target.shape[0], size=max_samples, replace=False)
+        X_eval = X_target[idx]
+    else:
+        X_eval = X_target
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(X_eval)
+
+    # ---- Robustly reduce SHAP to per-feature mean(|SHAP|) ----
+    if isinstance(shap_values, list):
+        # list of arrays, one per class: each (n_samples, n_features)
+        sv = np.mean([np.abs(s) for s in shap_values], axis=0)   # (n_samples, n_features)
+        mean_abs = sv.mean(axis=0)                               # (n_features,)
+    else:
+        shap_values = np.asarray(shap_values)
+        if shap_values.ndim == 3:
+            # could be (n_samples, n_classes, n_features) OR (n_samples, n_features, n_classes)
+            if shap_values.shape[2] == len(feature_names):
+                # (n_samples, n_classes, n_features)
+                sv = np.mean(np.abs(shap_values), axis=1)        # (n_samples, n_features)
+                mean_abs = sv.mean(axis=0)                       # (n_features,)
+            elif shap_values.shape[1] == len(feature_names):
+                # (n_samples, n_features, n_classes)
+                sv = np.mean(np.abs(shap_values), axis=2)        # (n_samples, n_features)
+                mean_abs = sv.mean(axis=0)                       # (n_features,)
+            else:
+                raise ValueError(f"Unexpected SHAP shape {shap_values.shape} for n_features={len(feature_names)}")
+        elif shap_values.ndim == 2:
+            # (n_samples, n_features)
+            mean_abs = np.mean(np.abs(shap_values), axis=0)      # (n_features,)
+        else:
+            raise ValueError(f"Unexpected SHAP ndim={shap_values.ndim}, shape={shap_values.shape}")
+
+    # sanity check
+    if len(mean_abs) != len(feature_names):
+        raise ValueError(f"mean_abs length {len(mean_abs)} != n_features {len(feature_names)}")
+    df = pd.DataFrame({"feature": feature_names, "mean_abs_shap": mean_abs})
+    df = df.sort_values("mean_abs_shap", ascending=False).reset_index(drop=True)
+    return df
+
+
+def compare_importance_ranks(df_a, df_b, value_col_a, value_col_b, topk=20):
+    """
+    df_a and df_b are DataFrames with 'feature' and score columns.
+    Returns rank correlation and top-k overlap.
+    """
+    a = df_a[["feature", value_col_a]].copy()
+    b = df_b[["feature", value_col_b]].copy()
+
+    merged = a.merge(b, on="feature", how="inner")
+    merged["rank_a"] = merged[value_col_a].rank(ascending=False, method="average")
+    merged["rank_b"] = merged[value_col_b].rank(ascending=False, method="average")
+
+    rho, _ = stats.spearmanr(merged["rank_a"], merged["rank_b"])
+
+    top_a = set(df_a["feature"].head(topk).tolist())
+    top_b = set(df_b["feature"].head(topk).tolist())
+    overlap = len(top_a & top_b)
+
+    return merged, float(rho), overlap, top_a & top_b
+
+
+def run_feature_importance_in_vs_cross(train_key: str, test_key: str, use_shap: bool = True):
+    """
+    Compare feature importance ranks in-domain vs cross-domain.
+    In-domain: train XGB on train_key (full data), importance by gain.
+    Cross-domain: train XGB on train_key, evaluate importance on test_key via SHAP (optional) and also gain.
+    """
+    out_dir = results_dir("feature_importance_transfer")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Load data + features
+    df_train = load_data(dataset_key=train_key)
+    df_test  = load_data(dataset_key=test_key)
+
+    X_train_df = load_cached_features_for_dataset(train_key)
+    X_test_df  = load_cached_features_for_dataset(test_key)
+
+    feature_names = list(X_train_df.columns)
+    X_test_df = X_test_df[feature_names]  # align
+
+    X_train = X_train_df.values
+    y_train = df_train["label"].values
+    X_test  = X_test_df.values
+    y_test  = df_test["label"].values
+
+    # Train on source
+    model, gain_df = train_xgb_and_get_gain_importance(X_train, y_train, feature_names)
+
+    # Cross-domain performance (for context)
+    y_pred = model.predict(X_test)
+    cross_metrics = {
+        "macro_f1": float(f1_score(y_test, y_pred, average="macro")),
+        "accuracy": float(accuracy_score(y_test, y_pred)),
+        "adjacent_acc": float(np.mean(np.abs(y_test - y_pred) <= 1)),
+    }
+
+    gain_path = os.path.join(out_dir, f"gain_train_{train_key}_test_{test_key}.csv")
+    gain_df.to_csv(gain_path, index=False)
+
+    results = {
+        "train": train_key,
+        "test": test_key,
+        "cross_metrics": cross_metrics,
+        "gain_csv": gain_path,
+    }
+
+    # Optional: SHAP on target domain
+    if use_shap:
+        shap_df = shap_importance_on_target(model, X_test, feature_names, max_samples=2000)
+        shap_path = os.path.join(out_dir, f"shap_train_{train_key}_on_{test_key}.csv")
+        shap_df.to_csv(shap_path, index=False)
+        results["shap_csv"] = shap_path
+
+        # Compare gain vs SHAP ranks (within this cross setting)
+        merged, rho, overlap, overlap_set = compare_importance_ranks(
+            gain_df, shap_df, "gain", "mean_abs_shap", topk=20
+        )
+        merged.to_csv(os.path.join(out_dir, f"rank_compare_gain_vs_shap_{train_key}_to_{test_key}.csv"), index=False)
+        results["gain_vs_shap_rank_spearman"] = rho
+        results["gain_vs_shap_top20_overlap"] = overlap
+        results["gain_vs_shap_overlap_features"] = sorted(list(overlap_set))
+
+    # Plot top-20 gain
+    top20 = gain_df.head(20)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.barh(top20["feature"][::-1], top20["gain"][::-1])
+    ax.set_title(f"Top-20 XGBoost Gain (train {train_key})")
+    ax.set_xlabel("Gain")
+    plt.tight_layout()
+    fig_path = os.path.join(figures_dir("feature_importance_transfer"), f"gain_top20_{train_key}_to_{test_key}.png")
+    os.makedirs(os.path.dirname(fig_path), exist_ok=True)
+    plt.savefig(fig_path, dpi=150)
+    plt.close()
+    results["gain_plot"] = fig_path
+
+    if use_shap:
+        top20s = shap_df.head(20)
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(top20s["feature"][::-1], top20s["mean_abs_shap"][::-1])
+        ax.set_title(f"Top-20 mean(|SHAP|) on target ({test_key})\nmodel trained on {train_key}")
+        ax.set_xlabel("mean(|SHAP|)")
+        plt.tight_layout()
+        fig_path2 = os.path.join(figures_dir("feature_importance_transfer"), f"shap_top20_{train_key}_on_{test_key}.png")
+        plt.savefig(fig_path2, dpi=150)
+        plt.close()
+        results["shap_plot"] = fig_path2
+
+    with open(os.path.join(out_dir, f"summary_{train_key}_to_{test_key}.json"), "w") as f:
+        json.dump(results, f, indent=2)
+
+    log(f"[feature importance] saved to {out_dir}")
+    return results
+
+
 def run_interpretable_models(features_df, labels, splits, feature_groups):
     log("\n" + "="*60)
     log("EXPERIMENT 2: Interpretable Classifiers")
@@ -1464,8 +1655,15 @@ def main():
     parser.add_argument("--cross_task_bert", action="store_true")
     parser.add_argument("--feature_select_only", action="store_true")
     parser.add_argument("--embedding_probe_only", action="store_true")
+    parser.add_argument("--fi_transfer", action="store_true", help="Run feature importance in-domain vs cross-domain")
+    parser.add_argument("--fi_use_shap", action="store_true")
     args = parser.parse_args()
     dataset_key = args.dataset
+
+    if args.fi_transfer:
+        run_feature_importance_in_vs_cross(args.train_dataset, args.test_dataset, use_shap=args.fi_use_shap)
+        run_feature_importance_in_vs_cross(args.test_dataset, args.train_dataset, use_shap=args.fi_use_shap)
+        return
 
     if args.cross_task:
         model_names = tuple(m.strip() for m in args.cross_models.split(",") if m.strip())

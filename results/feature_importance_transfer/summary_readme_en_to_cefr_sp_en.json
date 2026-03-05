@@ -1,0 +1,32 @@
+{
+  "train": "readme_en",
+  "test": "cefr_sp_en",
+  "cross_metrics": {
+    "macro_f1": 0.19583007289332363,
+    "accuracy": 0.2891843262694922,
+    "adjacent_acc": 0.7983806477409037
+  },
+  "gain_csv": "/Users/mandy/Documents/GitHub/cefr-text-difficulty/results/feature_importance_transfer/gain_train_readme_en_test_cefr_sp_en.csv",
+  "shap_csv": "/Users/mandy/Documents/GitHub/cefr-text-difficulty/results/feature_importance_transfer/shap_train_readme_en_on_cefr_sp_en.csv",
+  "gain_vs_shap_rank_spearman": 0.6440030557677616,
+  "gain_vs_shap_top20_overlap": 15,
+  "gain_vs_shap_overlap_features": [
+    "automated_readability_index",
+    "coleman_liau_index",
+    "dale_chall",
+    "flesch_kincaid_grade",
+    "guiraud_index",
+    "gunning_fog",
+    "max_dep_distance",
+    "max_sent_length",
+    "max_word_length",
+    "mean_dep_distance",
+    "mean_sent_length",
+    "mean_tree_depth",
+    "n_tokens",
+    "n_types",
+    "ttr"
+  ],
+  "gain_plot": "/Users/mandy/Documents/GitHub/cefr-text-difficulty/figures/feature_importance_transfer/gain_top20_readme_en_to_cefr_sp_en.png",
+  "shap_plot": "/Users/mandy/Documents/GitHub/cefr-text-difficulty/figures/feature_importance_transfer/shap_top20_readme_en_on_cefr_sp_en.png"
+}
