@@ -1214,6 +1214,7 @@ def train_bert_fold(texts, labels, train_idx, test_idx, fold_i):
     best_f1 = 0
     best_preds = None
     best_logits_all = None
+    best_state_dict = None
 
     for epoch in range(BERT_EPOCHS):
         model.train()
@@ -1251,6 +1252,7 @@ def train_bert_fold(texts, labels, train_idx, test_idx, fold_i):
             best_f1 = f1
             best_preds = all_preds.copy()
             best_logits_all = all_logits.copy()
+            best_state_dict = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
     y_test = np.array(test_labels)
     del model
@@ -1266,7 +1268,56 @@ def train_bert_fold(texts, labels, train_idx, test_idx, fold_i):
         "confusion_matrix": confusion_matrix(y_test, best_preds, labels=list(range(6))),
         "adjacent_acc": float(np.mean(np.abs(y_test - best_preds) <= 1)),
         "kappa": cohen_kappa_score(y_test, best_preds, weights="quadratic"),
+        "best_state_dict": best_state_dict,
     }
+
+
+def mean_pool_hidden(hidden, attention_mask):
+    # hidden: [B, T, H], mask: [B, T]
+    mask = attention_mask.unsqueeze(-1).float()
+    summed = (hidden * mask).sum(dim=1)
+    denom = mask.sum(dim=1).clamp(min=1.0)
+    return summed / denom  # [B, H]
+
+
+def extract_layer_embeddings(model, tokenizer, texts, batch_size=64, max_len=BERT_MAX_LEN, pooling="mean"):
+    """
+    Returns list of numpy arrays: layer_embs[l] has shape (N, H),
+    where l=0 is embeddings output, l=1..12 are transformer layers.
+    """
+    device = next(model.parameters()).device
+    model.eval()
+
+    all_layer_vecs = None
+    with torch.no_grad():
+        for start in range(0, len(texts), batch_size):
+            batch_texts = texts[start:start+batch_size]
+            enc = tokenizer(batch_texts, truncation=True, padding="max_length",
+                            max_length=max_len, return_tensors="pt")
+            input_ids = enc["input_ids"].to(device)
+            attention_mask = enc["attention_mask"].to(device)
+
+            outputs = model.bert(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_hidden_states=True,
+                return_dict=True
+            )
+            hidden_states = outputs.hidden_states  # tuple length 13: (embeddings, layer1..layer12)
+
+            # initialize storage
+            if all_layer_vecs is None:
+                all_layer_vecs = [[] for _ in range(len(hidden_states))]
+
+            for l, h in enumerate(hidden_states):
+                if pooling == "cls":
+                    vec = h[:, 0, :]                      # [B, H]
+                else:
+                    vec = mean_pool_hidden(h, attention_mask)  # [B, H]
+                all_layer_vecs[l].append(vec.cpu().numpy())
+
+    layer_embs = [np.vstack(chunks) for chunks in all_layer_vecs]
+    return layer_embs  # list length 13
 
 
 def run_bert(df, splits):
@@ -1317,6 +1368,93 @@ def run_bert(df, splits):
         logits_array[idx] = logit
 
     return bert_results, logits_array
+
+
+def run_layerwise_probing(df, splits, dataset_key: str, pooling="mean"):
+    log("\n" + "="*60)
+    log("EXPERIMENT 5: Layer-wise probing of fine-tuned BERT representations")
+    log("="*60)
+
+    texts = df["text"].tolist()
+    y = df["label"].values
+    tokenizer = BertTokenizer.from_pretrained(BERT_MODEL_NAME)
+
+    n_layers = 13  # 0..12
+    f1_by_layer = [[] for _ in range(n_layers)]
+    acc_by_layer = [[] for _ in range(n_layers)]
+
+    device = torch.device(DEVICE if torch.cuda.is_available() else "cpu")
+
+    for fold_i, (train_idx, test_idx) in enumerate(splits):
+        log(f"\n--- Fold {fold_i+1}/{N_FOLDS} ---")
+
+        fold_out = train_bert_fold(texts, y, train_idx, test_idx, fold_i)
+        best_state = fold_out.get("best_state_dict", None)
+        if best_state is None:
+            raise ValueError("Please modify train_bert_fold to return best_state_dict for layer probing.")
+
+        model = BertForSequenceClassification.from_pretrained(BERT_MODEL_NAME, num_labels=6).to(device)
+        model.load_state_dict(best_state)
+        model.eval()
+
+        # Extract embeddings for ALL texts once, then probe using fold split
+        layer_embs = extract_layer_embeddings(model, tokenizer, texts,
+                                              batch_size=BERT_BATCH_SIZE,
+                                              max_len=BERT_MAX_LEN,
+                                              pooling=pooling)
+
+        # Train probe per layer
+        for l in range(n_layers):
+            X = layer_embs[l]
+            X_train, X_test = X[train_idx], X[test_idx]
+            y_train, y_test = y[train_idx], y[test_idx]
+
+            scaler = StandardScaler()
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.transform(X_test)
+
+            probe = LogisticRegression(
+                max_iter=2000,
+                class_weight="balanced",
+                random_state=SEED
+            )
+            probe.fit(X_train, y_train)
+            y_pred = probe.predict(X_test)
+
+            f1_by_layer[l].append(f1_score(y_test, y_pred, average="macro"))
+            acc_by_layer[l].append(accuracy_score(y_test, y_pred))
+
+        del model
+        torch.cuda.empty_cache()
+
+    # aggregate
+    mean_f1 = np.array([np.mean(v) for v in f1_by_layer])
+    std_f1 = np.array([np.std(v) for v in f1_by_layer])
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(9, 5))
+    xs = np.arange(n_layers)
+    ax.errorbar(xs, mean_f1, yerr=std_f1, marker="o", capsize=4)
+    ax.set_xlabel("Layer index (0 = embedding output, 1..12 = Transformer layers)")
+    ax.set_ylabel("Macro F1 (5-fold CV)")
+    ax.set_title(f"Layer-wise linear probe on fine-tuned BERT ({dataset_key})")
+    ax.set_xticks(xs)
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURES_DIR, "bert_layerwise_probe_curve.png"), dpi=150)
+    plt.close()
+
+    out = {
+        "mean_macro_f1_by_layer": mean_f1.tolist(),
+        "std_macro_f1_by_layer": std_f1.tolist(),
+        "pooling": pooling,
+    }
+    with open(os.path.join(RESULTS_DIR, "bert_layerwise_probe_results.json"), "w") as f:
+        json.dump(out, f, indent=2)
+
+    # print best layer
+    best_layer = int(np.argmax(mean_f1))
+    log(f"\nBest layer by mean Macro-F1: layer={best_layer}, F1={mean_f1[best_layer]:.4f}")
+    return out
 
 
 def train_dan_fold(texts, labels, train_idx, test_idx, fold_i, tokenizer, pretrained_embeddings=None):
@@ -1657,6 +1795,7 @@ def main():
     parser.add_argument("--embedding_probe_only", action="store_true")
     parser.add_argument("--fi_transfer", action="store_true", help="Run feature importance in-domain vs cross-domain")
     parser.add_argument("--fi_use_shap", action="store_true")
+    parser.add_argument("--layer_probe_only", action="store_true")
     args = parser.parse_args()
     dataset_key = args.dataset
 
@@ -1741,6 +1880,11 @@ def main():
             f"features_df has {len(features_df)} rows, df has {len(df)} rows. "
             f"Did you run feature_extraction.py --dataset {dataset_key}?"
         )
+
+    if args.layer_probe_only:
+        run_layerwise_probing(df, splits, dataset_key, pooling="mean")
+        log("Layer-wise probing only run complete.")
+        return
 
     # Experiment 1: EDA
     corr_df, group_corr_df = run_eda(df, features_df, feature_groups, dataset_key)
